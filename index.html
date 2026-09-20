@@ -176,7 +176,6 @@
             margin-bottom: 12px;
         }
 
-        /* --- HERO CARD (IN EVIDENZA BERSAGLIO ATTUALE) --- */
         .hero-target-card {
             background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%);
             border: 2px solid var(--cyan);
@@ -220,7 +219,6 @@
             font-weight: 700;
         }
 
-        /* --- SECONDO PIANO (MINORE EVIDENZA) --- */
         .secondary-plan-card {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--border);
@@ -302,6 +300,14 @@
             font-size: 0.75rem;
             font-weight: 700;
         }
+
+        .mark-row {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -340,7 +346,13 @@
             </optgroup>
         </select>
         <button id="gpsBtn" class="btn btn-amber" onclick="toggleGPS()">📡 Attiva GPS Reale</button>
-        <button class="btn btn-cyan btn-calc-trigger" onclick="onCalculatePressed(this)">⚡ CALCOLA ROTTE & AVVIA TEMPO</button>
+        
+        <!-- CONTROLLI TEMPO SEPARATI -->
+        <button id="timerToggleBtn" class="btn btn-green" onclick="toggleTimer()">▶️ Avvia Tempo</button>
+        <button class="btn" onclick="resetTimer()">🔄 Azzera Tempo</button>
+
+        <!-- PULSANTE CALCOLO PROSSIMA ROTTA -->
+        <button class="btn btn-cyan btn-calc-trigger" onclick="onCalculatePressed(this)">🎯 CALCOLA PROSSIMA ROTTA</button>
     </div>
 </header>
 
@@ -420,32 +432,23 @@
             </div>
         </div>
 
+        <!-- CONFIGURAZIONE BOE E CAMPO DI REGATA DINAMICO -->
         <div class="card">
             <div class="card-title">
-                <span>🏁 Campo di Regata (Vertici)</span>
-            </div>
-            <div class="form-group" style="margin-bottom:8px;">
-                <label>Obiettivo Corrente</label>
-                <select id="targetMarkSelect" onchange="updateLiveStatus()">
-                    <option value="A">Boa A (Bolina / Windward)</option>
-                    <option value="B" selected>Boa B (Poppa / Leeward)</option>
-                </select>
+                <span>🏁 Campo di Regata & Boe</span>
+                <button class="btn btn-cyan" style="padding: 2px 8px; font-size:0.75rem;" onclick="addMark()">+ Aggiungi Boa</button>
             </div>
             
-            <div style="border-top:1px dashed var(--border); padding-top:8px; margin-top:8px;">
-                <label style="color:var(--amber); font-weight:bold;">Boa A (Coordinate)</label>
-                <div class="form-row" style="margin-top:4px;">
-                    <div class="form-group"><label>Lat A</label><input type="number" id="latA" value="40.7500" step="0.0001" onchange="updateLiveStatus()"></div>
-                    <div class="form-group"><label>Lon A</label><input type="number" id="lonA" value="14.4800" step="0.0001" onchange="updateLiveStatus()"></div>
-                </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label style="color:var(--amber); font-weight:bold;">🎯 Prossima Boa Obiettivo</label>
+                <select id="targetMarkSelect" onchange="updateLiveStatus()">
+                    <!-- Popolato dinamicamente -->
+                </select>
             </div>
 
-            <div style="border-top:1px dashed var(--border); padding-top:8px; margin-top:8px;">
-                <label style="color:var(--amber); font-weight:bold;">Boa B (Coordinate)</label>
-                <div class="form-row" style="margin-top:4px;">
-                    <div class="form-group"><label>Lat B</label><input type="number" id="latB" value="40.5433" step="0.0001" onchange="updateLiveStatus()"></div>
-                    <div class="form-group"><label>Lon B</label><input type="number" id="lonB" value="14.4600" step="0.0001" onchange="updateLiveStatus()"></div>
-                </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Configurazione Coordinate Boe:</div>
+            <div id="marksListContainer" style="max-height: 280px; overflow-y: auto; padding-right:2px;">
+                <!-- Righe boe collegate tramite JS -->
             </div>
         </div>
 
@@ -483,10 +486,9 @@
             <div id="favoredTackTitle" class="banner-highlight">BORDO FAVOREVOLE: CALCOLO IN CORSO...</div>
             <div id="bannerDetail" class="banner-sub">--</div>
 
-            <!-- RIQUADRO HERO IN EVIDENZA (OBIETTIVO ATTUALE & ROTTA DINAMICA) -->
+            <!-- RIQUADRO HERO IN EVIDENZA -->
             <div class="hero-target-card">
                 <div class="hero-grid">
-                    <!-- ROTTA DINAMICA PER BERSAGLIO ATTUALE -->
                     <div class="hero-val-box">
                         <div class="metric-lbl">🎯 Rotta Dinamica per Bersaglio Attuale</div>
                         <div class="hero-mega-val" id="heroHdgWithLeeway">--°</div>
@@ -494,7 +496,6 @@
                         <div style="font-size:0.68rem; color:var(--text-muted); margin-top:4px;" id="heroLeewayNote">Prua bussola istantanea da timonare</div>
                     </div>
 
-                    <!-- BERSAGLIO ATTUALE & COORDINATE DINAMICHE -->
                     <div class="hero-val-box">
                         <div class="metric-lbl">📍 Bersaglio Attuale & Coordinate</div>
                         <div class="hero-sub-val" id="heroTargetName" style="font-size:1.05rem; margin-top:2px;">--</div>
@@ -502,7 +503,6 @@
                         <div style="font-size: 0.75rem; color: var(--cyan); margin-top:2px; font-weight:700;" id="heroTargetDistBrg">--</div>
                     </div>
 
-                    <!-- TIMER & SOG GPS -->
                     <div class="hero-val-box" style="border-color: rgba(245, 158, 11, 0.4);">
                         <div class="metric-lbl">⏱️ Tempo & Vel. GPS</div>
                         <div class="metric-val amber" id="valLiveTimer" style="font-size:1.5rem; font-weight:900;">00:00</div>
@@ -512,10 +512,10 @@
                 </div>
             </div>
 
-            <!-- SECONDA FASCIA (MINORE EVIDENZA) - PIANI INIZIALI E STATISTICHE -->
+            <!-- SECONDA FASCIA - PIANI INIZIALI E STATISTICHE -->
             <div class="secondary-plan-card">
                 <div class="secondary-title">
-                    <span>📋 Piano Strategico di Bordo Iniziale (Minore Evidenza)</span>
+                    <span>📋 Piano Strategico di Bordo Iniziale</span>
                     <span style="color:var(--cyan);" id="lblTackTypeDetail">--</span>
                 </div>
                 <div class="metrics-grid">
@@ -573,7 +573,7 @@
         <div class="card" style="padding:10px;">
             <div class="card-title" style="margin-bottom:8px;">
                 <span>🗺️ Plotter Tattico & Laylines</span>
-                <span style="font-size:0.75rem; color:var(--cyan);">Bordo Attivo Evidenziato</span>
+                <span style="font-size:0.75rem; color:var(--cyan);">Boa Obiettivo Attiva</span>
             </div>
             <div id="plotterContainer">
                 <canvas id="tacticalCanvas"></canvas>
@@ -628,16 +628,83 @@
         'comet910_18': { name: "Comet 910", stwUp: 6.2, twaUp: 41, stwDown: 6.1, twaDown: 175, leeway: 4, tws: 18 }
     };
 
+    // ELIMINATE INDICAZIONI TIPOLOGIA BOA (A, B, C...)
+    let marks = [
+        { id: 'm_A', name: 'A', lat: 40.7500, lon: 14.4800 },
+        { id: 'm_B', name: 'B', lat: 40.5433, lon: 14.4600 },
+        { id: 'm_C', name: 'C', lat: 40.6500, lon: 14.5000 }
+    ];
+
     let currentRoutePlan = null;
     let selectedLegState = 1;
 
     let elapsedSeconds = 0;
     let timerInterval = null;
+    let isTimerRunning = false;
 
     let gpsWatchId = null;
 
     const toRad = deg => deg * Math.PI / 180;
     const toDeg = rad => rad * 180 / Math.PI;
+
+    function renderMarksUI() {
+        const container = document.getElementById('marksListContainer');
+        const select = document.getElementById('targetMarkSelect');
+        const currentSelectedId = select ? select.value : (marks[0] ? marks[0].id : '');
+
+        if (container) {
+            container.innerHTML = marks.map((m) => `
+                <div class="mark-row">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <input type="text" value="${m.name}" style="width:140px; font-weight:bold; color:var(--amber); padding:2px 6px; font-size:0.8rem;" onchange="updateMarkData('${m.id}', 'name', this.value)">
+                        <button class="btn" style="padding:2px 6px; font-size:0.7rem; color:var(--red); border-color:var(--red);" onclick="removeMark('${m.id}')" ${marks.length <= 1 ? 'disabled' : ''}>🗑️ Elimina</button>
+                    </div>
+                    <div class="form-row" style="margin-bottom:0;">
+                        <div class="form-group"><label>Latitudine</label><input type="number" value="${m.lat}" step="0.0001" onchange="updateMarkData('${m.id}', 'lat', parseFloat(this.value))"></div>
+                        <div class="form-group"><label>Longitudine</label><input type="number" value="${m.lon}" step="0.0001" onchange="updateMarkData('${m.id}', 'lon', parseFloat(this.value))"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        if (select) {
+            select.innerHTML = marks.map(m => `
+                <option value="${m.id}" ${m.id === currentSelectedId ? 'selected' : ''}>Boa ${m.name}</option>
+            `).join('');
+        }
+    }
+
+    function addMark() {
+        const nextChar = String.fromCharCode(65 + marks.length);
+        const lastMark = marks[marks.length - 1] || { lat: 40.7000, lon: 14.4500 };
+        const newId = 'm_' + Date.now();
+        marks.push({
+            id: newId,
+            name: `${nextChar}`,
+            lat: parseFloat((lastMark.lat + 0.01).toFixed(4)),
+            lon: parseFloat((lastMark.lon + 0.01).toFixed(4))
+        });
+        renderMarksUI();
+        recalculateRoutePlan();
+    }
+
+    function removeMark(id) {
+        if (marks.length <= 1) return;
+        marks = marks.filter(m => m.id !== id);
+        renderMarksUI();
+        recalculateRoutePlan();
+    }
+
+    function updateMarkData(id, field, value) {
+        const mark = marks.find(m => m.id === id);
+        if (mark) {
+            mark[field] = value;
+            if (field === 'name') {
+                renderMarksUI();
+            }
+            recalculateRoutePlan();
+        }
+    }
 
     function haversine(lat1, lon1, lat2, lon2) {
         const R = 3440.065;
@@ -677,6 +744,26 @@
         return `${m < 10 ? '0':''}${m}:${s < 10 ? '0':''}${s}`;
     }
 
+    // --- CONTROLLI TEMPO SEPARATI (AVVIA / PAUSA / AZZERA) ---
+    function toggleTimer() {
+        const btn = document.getElementById('timerToggleBtn');
+        if (isTimerRunning) {
+            stopTimer();
+            isTimerRunning = false;
+            if (btn) {
+                btn.innerText = "▶️ Avvia Tempo";
+                btn.className = "btn btn-green";
+            }
+        } else {
+            startTimer();
+            isTimerRunning = true;
+            if (btn) {
+                btn.innerText = "⏸️ Pausa Tempo";
+                btn.className = "btn btn-amber";
+            }
+        }
+    }
+
     function startTimer() {
         if (!timerInterval) {
             timerInterval = setInterval(() => {
@@ -697,11 +784,16 @@
         if (timerEl) timerEl.className = "metric-val green";
     }
 
-    function resetAndStartTimer() {
+    function resetTimer() {
         stopTimer();
+        isTimerRunning = false;
         elapsedSeconds = 0;
         updateTimerDisplay();
-        startTimer();
+        const btn = document.getElementById('timerToggleBtn');
+        if (btn) {
+            btn.innerText = "▶️ Avvia Tempo";
+            btn.className = "btn btn-green";
+        }
     }
 
     function updateTimerDisplay() {
@@ -718,6 +810,12 @@
 
         if (state === 'ARRIVO') {
             stopTimer();
+            isTimerRunning = false;
+            const btn = document.getElementById('timerToggleBtn');
+            if (btn) {
+                btn.innerText = "▶️ Avvia Tempo";
+                btn.className = "btn btn-green";
+            }
         }
         updateLiveStatus();
     }
@@ -820,6 +918,7 @@
         }
     }
 
+    // --- PULSANTE DEDICATO CALCOLO PROSSIMA ROTTA ---
     function onCalculatePressed(btn) {
         const allCalcBtns = document.querySelectorAll('.btn-calc-trigger');
         allCalcBtns.forEach(b => {
@@ -833,15 +932,19 @@
         });
 
         recalculateRoutePlan();
-        resetAndStartTimer();
     }
 
     function recalculateRoutePlan() {
         const latBoat = parseFloat(document.getElementById('latBoat').value);
         const lonBoat = parseFloat(document.getElementById('lonBoat').value);
-        const targetMark = document.getElementById('targetMarkSelect').value;
-        const latTarget = parseFloat(document.getElementById('lat' + targetMark).value);
-        const lonTarget = parseFloat(document.getElementById('lon' + targetMark).value);
+        
+        const targetMarkId = document.getElementById('targetMarkSelect') ? document.getElementById('targetMarkSelect').value : null;
+        const targetMarkObj = marks.find(m => m.id === targetMarkId) || marks[0];
+        
+        if (!targetMarkObj) return;
+
+        const latTarget = targetMarkObj.lat;
+        const lonTarget = targetMarkObj.lon;
 
         const twd = parseFloat(document.getElementById('twd').value) % 360;
         const tws = parseFloat(document.getElementById('tws').value);
@@ -952,7 +1055,8 @@
             targetLon: lonTarget,
             tackLat: latTack,
             tackLon: lonTack,
-            targetMark: targetMark,
+            targetMark: targetMarkObj.name,
+            targetMarkId: targetMarkObj.id,
             hdg1: hdg1,
             hdg2: hdg2,
             dist1: dist1,
@@ -989,7 +1093,6 @@
         }
         updateLegButtonsUI();
 
-        // --- 1. IDENTIFICAZIONE BERSAGLIO ATTUALE E COORDINATE ---
         let curTargetName = "";
         let curTargetLat = 0;
         let curTargetLon = 0;
@@ -1008,26 +1111,21 @@
             curTargetLon = plan.targetLon;
         }
 
-        // --- 2. CALCOLO DINAMICO DISTANZA E RILEVAMENTO DIRETTI (SENZA SCARROCCIO) ---
         let distToCurTarget = haversine(curLat, curLon, curTargetLat, curTargetLon);
-        let brgToCurTarget = bearing(curLat, curLon, curTargetLat, curTargetLon); // Rilevamento diretto (Track)
+        let brgToCurTarget = bearing(curLat, curLon, curTargetLat, curTargetLon);
 
-        // --- 3. CALCOLO DINAMICO DELLA ROTTA DA TIMONARE CON SCARROCCIO ---
         const twd = plan.twd;
         const leewayVal = plan.leeway;
 
-        // Angolo di incidenza del vento rispetto al rilevamento reale verso il bersaglio
         let diffWind = (twd - brgToCurTarget + 360) % 360;
 
         let dynamicHdgWithLeeway = brgToCurTarget;
         let leewayCorrectionText = "";
 
         if (diffWind > 0 && diffWind < 180) {
-            // Vento da Destra (Mure a Dritta) -> Spinta deriva a Sinistra -> Si orza verso destra (+ Scarroccio)
             dynamicHdgWithLeeway = (brgToCurTarget + leewayVal + 360) % 360;
             leewayCorrectionText = `Mure a Dritta: +${leewayVal}° orza per deriva a SX`;
         } else if (diffWind > 180) {
-            // Vento da Sinistra (Mure a Sinistra) -> Spinta deriva a Destra -> Si orza verso sinistra (- Scarroccio)
             dynamicHdgWithLeeway = (brgToCurTarget - leewayVal + 360) % 360;
             leewayCorrectionText = `Mure a Sinistra: -${leewayVal}° orza per deriva a DX`;
         } else {
@@ -1037,7 +1135,6 @@
         const roundedHdgWithLeeway = Math.round(dynamicHdgWithLeeway);
         const roundedBrgNoLeeway = Math.round(brgToCurTarget);
 
-        // --- AGGIORNAMENTO RIQUADRO HERO (IN EVIDENZA DINAMICA) ---
         document.getElementById('heroHdgWithLeeway').innerHTML = `${roundedHdgWithLeeway}° <span style="font-size:0.9rem; color:var(--cyan); font-weight:normal;">(CON scarroccio)</span>`;
         document.getElementById('heroHdgNoLeeway').innerText = `SENZA scarroccio (BRG): ${roundedBrgNoLeeway}°`;
         document.getElementById('heroLeewayNote').innerText = leewayCorrectionText;
@@ -1046,7 +1143,6 @@
         document.getElementById('heroTargetCoords').innerText = `${curTargetLat.toFixed(4)}° N, ${curTargetLon.toFixed(4)}° E`;
         document.getElementById('heroTargetDistBrg').innerText = `Dist: ${distToCurTarget.toFixed(2)} NM | Rilevamento BRG: ${roundedBrgNoLeeway}°`;
 
-        // AGGIORNAMENTO BANNERS SUPERIORI
         const titleEl = document.getElementById('favoredTackTitle');
         const manovraText = plan.isUpwind ? "VIRATA" : "ABBATTUTA";
 
@@ -1065,7 +1161,6 @@
             document.getElementById('bannerDetail').innerHTML = `Navigazione verso ${curTargetName} | Manovra prevista: <b>${manovraText}</b>`;
         }
 
-        // SEZIONE SECONDARIA (MINORE EVIDENZA)
         const time1 = (plan.stwEff > 0) ? (plan.dist1 / plan.stwEff) * 60 : 0;
         const time2 = (plan.stwEff > 0) ? (plan.dist2 / plan.stwEff) * 60 : 0;
         const totalTime = time1 + time2;
@@ -1091,7 +1186,6 @@
         updateTimerDisplay();
         updateSailsMatrix(boatName, plan.tws, plan.isUpwind);
         
-        // Disegno Plotter Tattico
         drawTacticalMap(plan, curLat, curLon, hdgBoatInput);
     }
 
@@ -1178,6 +1272,7 @@
         document.getElementById('tacticalAdvice').innerHTML = `💡 <b>Consiglio Assetto (${boatName}):</b> ${advice}`;
     }
 
+    // --- PLOTTER TATTICO CON VISUALIZZAZIONE DI UNA SOLA BOA ALLA VOLTA ---
     function drawTacticalMap(plan, curLat, curLon, hdgBoat) {
         const canvas = document.getElementById('tacticalCanvas');
         const ctx = canvas.getContext('2d');
@@ -1200,6 +1295,7 @@
         const pCurBoatNM = getNMCoords(curLat, curLon);
 
         const margin = 60;
+        // Considera SOLO la boa obiettivo selezionata per il calcolo dei margini della mappa
         const allX = [pStartNM.x, pTargetNM.x, pTackNM.x, pCurBoatNM.x];
         const allY = [pStartNM.y, pTargetNM.y, pTackNM.y, pCurBoatNM.y];
 
@@ -1232,6 +1328,7 @@
         const dxWind = -Math.sin(radTwd);
         const dyWind = Math.cos(radTwd);
 
+        // Griglia Vento
         ctx.strokeStyle = 'rgba(245, 158, 11, 0.12)';
         ctx.lineWidth = 1.5;
         const step = 80;
@@ -1252,6 +1349,7 @@
             }
         }
 
+        // Bussola e Vento Box
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -1296,6 +1394,7 @@
         ctx.font = 'bold 12px sans-serif';
         ctx.fillText(`${plan.twd}° / ${plan.tws} kn`, wBoxX, wBoxY + 50);
 
+        // Traccia rotta diretta
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
@@ -1305,6 +1404,7 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
+        // Traccia Bordi Tattici
         const isLeg1Active = (selectedLegState === 1);
         ctx.lineWidth = isLeg1Active ? 6 : 2;
         ctx.strokeStyle = (plan.favoredTack === 'STB') ? '#10b981' : '#ef4444';
@@ -1325,11 +1425,13 @@
             ctx.stroke();
         }
 
+        // Punto di partenza
         ctx.fillStyle = '#64748b';
         ctx.beginPath();
         ctx.arc(cStart.x, cStart.y, 5, 0, Math.PI * 2);
         ctx.fill();
 
+        // Punto Manovra (Virata / Abbattuta)
         if (plan.needsTwoLegs) {
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
@@ -1341,6 +1443,7 @@
             ctx.fillText(`${maneuverName}`, cTack.x + 8, cTack.y + 3);
         }
 
+        // DISEGNO DELLA SOLA BOA OBIETTIVO ATTIVA
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
         ctx.arc(cTarget.x, cTarget.y, 8, 0, Math.PI * 2);
@@ -1348,7 +1451,7 @@
         ctx.font = 'bold 11px sans-serif';
         ctx.fillText(`BOA ${plan.targetMark}`, cTarget.x - 18, cTarget.y - 12);
 
-        // Disegno freccia barca orientata alla prua GPS/Simulata
+        // Simbolo Barca
         drawBoatArrowSymbol(ctx, cCurBoat.x, cCurBoat.y, hdgBoat, "#06b6d4");
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 11px sans-serif';
@@ -1378,6 +1481,7 @@
     }
 
     window.onload = () => {
+        renderMarksUI();
         recalculateRoutePlan();
         alignHeadingToRoute();
     };
