@@ -1,674 +1,100 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TatticaRegata Pro - Assistant Tattico Multiscafo / Monotipo</title>
-    <style>
-        :root {
-            --bg-dark: #0b1120;
-            --bg-card: #151e32;
-            --bg-input: #1e293b;
-            --border: #334155;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --cyan: #06b6d4;
-            --amber: #f59e0b;
-            --green: #10b981;
-            --red: #ef4444;
-            --blue: #3b82f6;
-            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text);
-            font-family: var(--font);
-            padding: 15px;
-            line-height: 1.4;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        h1 { font-size: 1.4rem; color: var(--cyan); display: flex; align-items: center; gap: 8px; }
-        .subtitle { font-size: 0.85rem; color: var(--text-muted); }
-
-        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .btn {
-            background: var(--bg-input);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-        .btn:hover { background: #2d3748; border-color: var(--cyan); }
-        .btn-amber { background: var(--amber); color: #000; border: none; }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 360px 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 900px) {
-            .grid-layout { grid-template-columns: 1fr; }
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 15px;
-        }
-
-        .card-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--amber);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 6px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
-        input[type="text"], input[type="number"], select {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 7px 10px;
-            border-radius: 6px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            width: 100%;
-        }
-        input:focus, select:focus { outline: none; border-color: var(--cyan); }
-
-        .checkbox-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 0.8rem;
-        }
-
-        .checkbox-grid label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--text);
-            cursor: pointer;
-        }
-
-        .checkbox-grid input[type="checkbox"] {
-            accent-color: var(--cyan);
-            width: 15px;
-            height: 15px;
-            cursor: pointer;
-        }
-
-        .tactical-banner {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border-left: 5px solid var(--cyan);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 15px;
-        }
-
-        .banner-highlight {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--green);
-            margin-bottom: 4px;
-        }
-
-        .banner-sub {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .metric-box {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 8px 6px;
-            text-align: center;
-        }
-        .metric-box.highlight-box {
-            background: rgba(6, 182, 212, 0.1);
-            border-color: var(--cyan);
-        }
-        .metric-box.coord-box {
-            background: rgba(245, 158, 11, 0.08);
-            border-color: rgba(245, 158, 11, 0.4);
-        }
-        .metric-val { font-size: 1.15rem; font-weight: 700; color: var(--cyan); }
-        .metric-val.amber { color: var(--amber); }
-        .metric-lbl { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
-
-        #plotterContainer {
-            width: 100%;
-            height: 440px;
-            background: #070d19;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
-        }
-
-        canvas { width: 100%; height: 100%; display: block; }
-
-        .sail-info-box {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .sail-card {
-            background: #10172a;
-            border: 1px solid var(--border);
-            padding: 10px;
-            border-radius: 6px;
-        }
-        .sail-card h4 { font-size: 0.8rem; color: var(--amber); margin-bottom: 4px; }
-        .sail-card p { font-size: 0.85rem; font-weight: 600; }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-    </style>
-</head>
-<body>
-
-<header>
-    <div>
-        <h1>⛵ TatticaRegata Pro</h1>
-        <div class="subtitle">Assistente Tattico - Dufour 31, First 30, J24, Comet 910</div>
-    </div>
-    <div class="btn-group">
-        <label style="font-size:0.8rem; color:var(--amber);">Preset Barca & Vento:</label>
-        <select id="presetSelector" class="btn" onchange="applyBoatPreset()">
-            <optgroup label="Dufour 31">
-                <option value="dufour6">Dufour 31 - Brezza Leggera (6 kn)</option>
-                <option value="dufour10" selected>Dufour 31 - Vento Medio (10 kn)</option>
-                <option value="dufour14">Dufour 31 - Vento Sostenuto (14 kn)</option>
-                <option value="dufour18">Dufour 31 - Vento Forte (18 kn)</option>
-            </optgroup>
-            <optgroup label="First 30 (1978)">
-                <option value="first30_6">First 30 - Brezza Leggera (6 kn)</option>
-                <option value="first30_10">First 30 - Vento Medio (10 kn)</option>
-                <option value="first30_14">First 30 - Vento Sostenuto (14 kn)</option>
-                <option value="first30_18">First 30 - Vento Forte (18 kn)</option>
-            </optgroup>
-            <optgroup label="J/24">
-                <option value="j24_6">J/24 - Brezza Leggera (6 kn)</option>
-                <option value="j24_10">J/24 - Vento Medio (10 kn)</option>
-                <option value="j24_14">J/24 - Vento Sostenuto (14 kn)</option>
-                <option value="j24_18">J/24 - Vento Forte (18 kn)</option>
-            </optgroup>
-            <optgroup label="Comet 910">
-                <option value="comet910_6">Comet 910 - Brezza Leggera (6 kn)</option>
-                <option value="comet910_10">Comet 910 - Vento Medio (10 kn)</option>
-                <option value="comet910_14">Comet 910 - Vento Sostenuto (14 kn)</option>
-                <option value="comet910_18">Comet 910 - Vento Forte (18 kn)</option>
-            </optgroup>
-        </select>
-        <button class="btn btn-amber" onclick="getGPSLocation()">📍 Usa GPS Reale</button>
-    </div>
-</header>
-
-<div class="grid-layout">
-    <div class="input-sidebar">
-        <div class="card">
-            <div class="card-title">
-                <span>⛵ Dati Imbarcazione</span>
-                <span class="badge" style="background:#1e293b; color:var(--cyan)">Polare Target</span>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Modello Barca</label>
-                    <input type="text" id="boatName" value="Dufour 31">
-                </div>
-                <div class="form-group">
-                    <label>Velocità Target (kn)</label>
-                    <input type="number" id="targetSTW" value="5.0" step="0.1" onchange="calculateTactics()">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Angolo Bolina Target (°)</label>
-                    <input type="number" id="targetTWA" value="44" step="1" onchange="calculateTactics()">
-                </div>
-                <div class="form-group">
-                    <label>Scarroccio Stimato (°)</label>
-                    <input type="number" id="leeway" value="6" step="1" onchange="calculateTactics()">
-                </div>
-            </div>
-        </div>
-
-        <!-- NUOVA CARD: INVENTARIO VELE A BORDO -->
-        <div class="card">
-            <div class="card-title">
-                <span>🎒 Vele Disponibili a Bordo</span>
-                <span class="badge" style="background:#1e293b; color:var(--amber)">Inventario</span>
-            </div>
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Vele da Bolina (Prua):</div>
-            <div class="checkbox-grid" style="margin-bottom:10px;">
-                <label><input type="checkbox" id="sail_genoa1" checked onchange="calculateTactics()"> Genoa 1 (150%)</label>
-                <label><input type="checkbox" id="sail_genoa2" checked onchange="calculateTactics()"> Genoa 2 (130%)</label>
-                <label><input type="checkbox" id="sail_solent" checked onchange="calculateTactics()"> Fiocco Solent</label>
-                <label><input type="checkbox" id="sail_fiocco2" checked onchange="calculateTactics()"> Fiocco 2 / Olim.</label>
-            </div>
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; border-top:1px dashed var(--border); padding-top:6px; font-weight:600;">Vele Portanti (Poppa/Lasco):</div>
-            <div class="checkbox-grid">
-                <label><input type="checkbox" id="sail_spi_light" checked onchange="calculateTactics()"> Spi Leggero (S1)</label>
-                <label><input type="checkbox" id="sail_spi_heavy" checked onchange="calculateTactics()"> Spi Pesante (S4)</label>
-                <label><input type="checkbox" id="sail_gennaker" checked onchange="calculateTactics()"> Gennaker / Code 0</label>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">
-                <span>💨 Condizioni Vento</span>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Direzione Vento TWD (°)</label>
-                    <input type="number" id="twd" value="360" min="0" max="359" onchange="calculateTactics()">
-                </div>
-                <div class="form-group">
-                    <label>Intensità Vento TWS (kn)</label>
-                    <input type="number" id="tws" value="10" min="1" max="50" onchange="calculateTactics()">
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">
-                <span>🏁 Campo di Regata (Vertici)</span>
-            </div>
-            <div class="form-group" style="margin-bottom:8px;">
-                <label>Obiettivo Corrente</label>
-                <select id="targetMarkSelect" onchange="calculateTactics()">
-                    <option value="A">Boa A (Bolina / Windward)</option>
-                    <option value="B">Boa B (Poppa / Leeward)</option>
-                </select>
-            </div>
-            
-            <div style="border-top:1px dashed var(--border); padding-top:8px; margin-top:8px;">
-                <label style="color:var(--amber); font-weight:bold;">Boa A (Coordinate)</label>
-                <div class="form-row" style="margin-top:4px;">
-                    <div class="form-group"><label>Lat A</label><input type="number" id="latA" value="40.7500" step="0.0001" onchange="calculateTactics()"></div>
-                    <div class="form-group"><label>Lon A</label><input type="number" id="lonA" value="14.4800" step="0.0001" onchange="calculateTactics()"></div>
-                </div>
-            </div>
-
-            <div style="border-top:1px dashed var(--border); padding-top:8px; margin-top:8px;">
-                <label style="color:var(--amber); font-weight:bold;">Boa B (Coordinate)</label>
-                <div class="form-row" style="margin-top:4px;">
-                    <div class="form-group"><label>Lat B</label><input type="number" id="latB" value="40.7000" step="0.0001" onchange="calculateTactics()"></div>
-                    <div class="form-group"><label>Lon B</label><input type="number" id="lonB" value="14.4800" step="0.0001" onchange="calculateTactics()"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">
-                <span>📍 Posizione Barca Corrente</span>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Latitudine Barca</label><input type="number" id="latBoat" value="40.7100" step="0.0001" onchange="calculateTactics()"></div>
-                <div class="form-group"><label>Longitudine Barca</label><input type="number" id="lonBoat" value="14.4600" step="0.0001" onchange="calculateTactics()"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="dashboard-main">
-        <div class="tactical-banner" id="bannerCard">
-            <div id="favoredTackTitle" class="banner-highlight">BORDO FAVOREVOLE: CALCOLO IN CORSO...</div>
-            <div id="bannerDetail" class="banner-sub">--</div>
-
-            <div class="metrics-grid">
-                <div class="metric-box">
-                    <div class="metric-lbl">Prua 1° Bordo</div>
-                    <div class="metric-val" id="valHdg1">--°</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-lbl">Dist. 1° Bordo</div>
-                    <div class="metric-val" id="valDist1">-- NM</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-lbl">Tempo 1° Bordo</div>
-                    <div class="metric-val" id="valTime1">-- min</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-lbl">Prua 2° Bordo</div>
-                    <div class="metric-val" id="valHdg2">--°</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-lbl">Dist. 2° Bordo</div>
-                    <div class="metric-val" id="valDist2">-- NM</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-lbl">Tempo 2° Bordo</div>
-                    <div class="metric-val" id="valTime2">-- min</div>
-                </div>
-                <div class="metric-box coord-box">
-                    <div class="metric-lbl" id="lblLatManeuver">📍 Lat Virata</div>
-                    <div class="metric-val amber" id="valLatTack">--</div>
-                </div>
-                <div class="metric-box coord-box">
-                    <div class="metric-lbl" id="lblLonManeuver">📍 Lon Virata</div>
-                    <div class="metric-val amber" id="valLonTack">--</div>
-                </div>
-                <div class="metric-box highlight-box">
-                    <div class="metric-lbl">⏱️ Tempo Totale</div>
-                    <div class="metric-val" id="valTimeTotal">-- min</div>
-                </div>
-                <div class="metric-box highlight-box">
-                    <div class="metric-lbl">📏 Dist. Totale</div>
-                    <div class="metric-val" id="valDistTotal">-- NM</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-lbl">VMG Netta</div>
-                    <div class="metric-val" id="valVMG">-- kn</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card" style="padding:10px;">
-            <div class="card-title" style="margin-bottom:8px;">
-                <span>🗺️ Plotter Tattico & Laylines</span>
-                <span style="font-size:0.75rem; color:var(--text-muted);">Verde = Mure a Dritta | Rosso = Mure a Sinistra</span>
-            </div>
-            <div id="plotterContainer">
-                <canvas id="tacticalCanvas"></canvas>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">
-                <span>⚙️ Raccomandazione Vele & Assetto</span>
-            </div>
-            <div class="sail-info-box">
-                <div class="sail-card">
-                    <h4>Vela / Portante Consigliata</h4>
-                    <p id="recHeadsail">--</p>
-                </div>
-                <div class="sail-card">
-                    <h4>Randa & Trasto</h4>
-                    <p id="recMainsail">--</p>
-                </div>
-                <div class="sail-card">
-                    <h4>Inclinazione Target</h4>
-                    <p id="recHeel">--°</p>
-                </div>
-            </div>
-            <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);" id="tacticalAdvice">
-                💡 <b>Consiglio Tattico:</b> Caricamento in corso...
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const presets = {
-        'dufour6':    { name: "Dufour 31", stw: 3.8, twa: 48, leeway: 8, tws: 6 },
-        'dufour10':   { name: "Dufour 31", stw: 5.0, twa: 44, leeway: 6, tws: 10 },
-        'dufour14':   { name: "Dufour 31", stw: 5.6, twa: 43, leeway: 5, tws: 14 },
-        'dufour18':   { name: "Dufour 31", stw: 5.9, twa: 42, leeway: 4, tws: 18 },
-
-        'first30_6':  { name: "First 30 (1978)", stw: 4.0, twa: 46, leeway: 7, tws: 6 },
-        'first30_10': { name: "First 30 (1978)", stw: 5.2, twa: 43, leeway: 5, tws: 10 },
-        'first30_14': { name: "First 30 (1978)", stw: 5.8, twa: 42, leeway: 4, tws: 14 },
-        'first30_18': { name: "First 30 (1978)", stw: 6.1, twa: 41, leeway: 4, tws: 18 },
-
-        'j24_6':      { name: "J/24", stw: 4.2, twa: 45, leeway: 6, tws: 6 },
-        'j24_10':      { name: "J/24", stw: 5.4, twa: 42, leeway: 4, tws: 10 },
-        'j24_14':      { name: "J/24", stw: 6.0, twa: 40, leeway: 3, tws: 14 },
-        'j24_18':      { name: "J/24", stw: 6.3, twa: 39, leeway: 3, tws: 18 },
-
-        'comet910_6':  { name: "Comet 910", stw: 4.1, twa: 46, leeway: 7, tws: 6 },
-        'comet910_10': { name: "Comet 910", stw: 5.3, twa: 43, leeway: 5, tws: 10 },
-        'comet910_14': { name: "Comet 910", stw: 5.9, twa: 42, leeway: 4, tws: 14 },
-        'comet910_18': { name: "Comet 910", stw: 6.2, twa: 41, leeway: 4, tws: 18 }
-    };
-
-    const toRad = deg => deg * Math.PI / 180;
-    const toDeg = rad => rad * 180 / Math.PI;
-
-    function haversine(lat1, lon1, lat2, lon2) {
-        const R = 3440.065;
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                  Math.sin(dLon/2) * Math.sin(dLon/2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-
-    function bearing(lat1, lon1, lat2, lon2) {
-        const dLon = toRad(lon2 - lon1);
-        const y = Math.sin(dLon) * Math.cos(toRad(lat2));
-        const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
-                  Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
-        return (toDeg(Math.atan2(y, x)) + 360) % 360;
-    }
-
-    function formatDuration(minutes) {
-        if (isNaN(minutes) || minutes < 0) return "-- min";
-        const totalSec = Math.round(minutes * 60);
-        const hrs = Math.floor(totalSec / 3600);
-        const mins = Math.floor((totalSec % 3600) / 60);
-        if (hrs > 0) return `${hrs}h ${mins}m`;
-        return `${mins} min`;
-    }
-
-    function applyBoatPreset() {
-        const key = document.getElementById('presetSelector').value;
-        const p = presets[key];
-        if (p) {
-            document.getElementById('boatName').value = p.name;
-            document.getElementById('targetSTW').value = p.stw.toFixed(1);
-            document.getElementById('targetTWA').value = p.twa;
-            document.getElementById('leeway').value = p.leeway;
-            document.getElementById('tws').value = p.tws;
-            calculateTactics();
-        }
-    }
-
-    function getGPSLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(position => {
-                document.getElementById('latBoat').value = position.coords.latitude.toFixed(4);
-                document.getElementById('lonBoat').value = position.coords.longitude.toFixed(4);
-                calculateTactics();
-            }, err => alert("Impossibile rilevare il GPS: " + err.message));
+(1° Bordo)";
+            curTargetLat = plan.tackLat;
+            curTargetLon = plan.tackLon;
         } else {
-            alert("Geolocalizzazione non supportata dal browser.");
+            curTargetName = `🎯 Boa ${plan.targetMark} ${plan.needsTwoLegs ? '(2° Bordo)' : '(Rotta Diretta)'}`;
+            curTargetLat = plan.targetLat;
+            curTargetLon = plan.targetLon;
         }
-    }
 
-    function calculateTactics() {
-        const boatName = document.getElementById('boatName').value;
-        const latBoat = parseFloat(document.getElementById('latBoat').value);
-        const lonBoat = parseFloat(document.getElementById('lonBoat').value);
-        const targetMark = document.getElementById('targetMarkSelect').value;
-        const latTarget = parseFloat(document.getElementById('lat' + targetMark).value);
-        const lonTarget = parseFloat(document.getElementById('lon' + targetMark).value);
+        // --- 2. CALCOLO DINAMICO DISTANZA E RILEVAMENTO DIRETTI (SENZA SCARROCCIO) ---
+        let distToCurTarget = haversine(curLat, curLon, curTargetLat, curTargetLon);
+        let brgToCurTarget = bearing(curLat, curLon, curTargetLat, curTargetLon); // Rilevamento diretto (Track)
 
-        const twd = parseFloat(document.getElementById('twd').value) % 360;
-        const tws = parseFloat(document.getElementById('tws').value);
-        const stw = parseFloat(document.getElementById('targetSTW').value);
-        const twaInput = parseFloat(document.getElementById('targetTWA').value);
-        const leeway = parseFloat(document.getElementById('leeway').value);
+        // --- 3. CALCOLO DINAMICO DELLA ROTTA DA TIMONARE CON SCARROCCIO ---
+        const twd = plan.twd;
+        const leewayVal = plan.leeway;
 
-        const distDirect = haversine(latBoat, lonBoat, latTarget, lonTarget);
-        const brgTarget = bearing(latBoat, lonBoat, latTarget, lonTarget);
+        // Angolo di incidenza del vento rispetto al rilevamento reale verso il bersaglio
+        let diffWind = (twd - brgToCurTarget + 360) % 360;
 
-        let angleToMarkFromWind = (brgTarget - twd + 360) % 360;
-        if (angleToMarkFromWind > 180) angleToMarkFromWind = 360 - angleToMarkFromWind;
+        let dynamicHdgWithLeeway = brgToCurTarget;
+        let leewayCorrectionText = "";
 
-        const isUpwind = angleToMarkFromWind <= 90;
-
-        let twaEff = twaInput;
-        let headingSTB, trackSTB, headingPORT, trackPORT;
-
-        if (isUpwind) {
-            headingSTB = (twd + twaEff) % 360;
-            trackSTB = (twd + twaEff + leeway) % 360;
-
-            headingPORT = (twd - twaEff + 360) % 360;
-            trackPORT = (twd - twaEff - leeway + 360) % 360;
+        if (diffWind > 0 && diffWind < 180) {
+            // Vento da Destra (Mure a Dritta) -> Spinta deriva a Sinistra -> Si orza verso destra (+ Scarroccio)
+            dynamicHdgWithLeeway = (brgToCurTarget + leewayVal + 360) % 360;
+            leewayCorrectionText = `Mure a Dritta: +${leewayVal}° orza per deriva a SX`;
+        } else if (diffWind > 180) {
+            // Vento da Sinistra (Mure a Sinistra) -> Spinta deriva a Destra -> Si orza verso sinistra (- Scarroccio)
+            dynamicHdgWithLeeway = (brgToCurTarget - leewayVal + 360) % 360;
+            leewayCorrectionText = `Mure a Sinistra: -${leewayVal}° orza per deriva a DX`;
         } else {
-            const twaDown = Math.min(165, Math.max(125, 180 - twaEff + 2));
-            twaEff = twaDown;
-
-            headingSTB = (twd + twaDown) % 360;
-            trackSTB = (twd + twaDown - leeway + 360) % 360;
-
-            headingPORT = (twd - twaDown + 360) % 360;
-            trackPORT = (twd - twaDown + leeway + 360) % 360;
+            leewayCorrectionText = `0° Scarroccio (In fil di ruota / Prua al vento)`;
         }
 
-        const latRef = latBoat;
-        const xM = (lonTarget - lonBoat) * Math.cos(toRad(latRef)) * 60;
-        const yM = (latTarget - latBoat) * 60;
+        const roundedHdgWithLeeway = Math.round(dynamicHdgWithLeeway);
+        const roundedBrgNoLeeway = Math.round(brgToCurTarget);
 
-        const radSTB = toRad(90 - trackSTB);
-        const radPORT = toRad(90 - trackPORT);
+        // --- AGGIORNAMENTO RIQUADRO HERO (IN EVIDENZA DINAMICA) ---
+        document.getElementById('heroHdgWithLeeway').innerHTML = `${roundedHdgWithLeeway}° <span style="font-size:0.9rem; color:var(--cyan); font-weight:normal;">(CON scarroccio)</span>`;
+        document.getElementById('heroHdgNoLeeway').innerText = `SENZA scarroccio (BRG): ${roundedBrgNoLeeway}°`;
+        document.getElementById('heroLeewayNote').innerText = leewayCorrectionText;
 
-        const u1 = { x: Math.cos(radSTB), y: Math.sin(radSTB) };
-        const u2 = { x: Math.cos(radPORT), y: Math.sin(radPORT) };
+        document.getElementById('heroTargetName').innerText = curTargetName;
+        document.getElementById('heroTargetCoords').innerText = `${curTargetLat.toFixed(4)}° N, ${curTargetLon.toFixed(4)}° E`;
+        document.getElementById('heroTargetDistBrg').innerText = `Dist: ${distToCurTarget.toFixed(2)} NM | Rilevamento BRG: ${roundedBrgNoLeeway}°`;
 
-        const det = u1.x * u2.y - u1.y * u2.x;
-        let dSTB = 0, dPORT = 0;
-        if (Math.abs(det) > 0.001) {
-            dSTB = (xM * u2.y - yM * u2.x) / det;
-            dPORT = (yM * u1.x - xM * u1.y) / det;
-        }
-
-        let favoredTack = "STB";
-        let hdg1 = headingSTB, dist1 = dSTB;
-        let hdg2 = headingPORT, dist2 = dPORT;
-        let tack1Label = "MURE A DRITTA (STARBOARD)";
-        let tack2Label = "MURE A SINISTRA (PORT)";
-
-        let diffSTB = Math.abs((trackSTB - brgTarget + 540) % 360 - 180);
-        let diffPORT = Math.abs((trackPORT - brgTarget + 540) % 360 - 180);
-
-        if (diffPORT < diffSTB) {
-            favoredTack = "PORT";
-            hdg1 = headingPORT; dist1 = dPORT;
-            hdg2 = headingSTB; dist2 = dSTB;
-            tack1Label = "MURE A SINISTRA (PORT)";
-            tack2Label = "MURE A DRITTA (STARBOARD)";
-        }
-
-        if (dist1 < 0) dist1 = 0;
-        if (dist2 < 0) dist2 = 0;
-
-        let xTack = 0, yTack = 0;
-        if (favoredTack === 'STB') {
-            const rad = toRad(90 - trackSTB);
-            xTack = dSTB * Math.cos(rad);
-            yTack = dSTB * Math.sin(rad);
-        } else {
-            const rad = toRad(90 - trackPORT);
-            xTack = dPORT * Math.cos(rad);
-            yTack = dPORT * Math.sin(rad);
-        }
-
-        const latTack = latBoat + (yTack / 60);
-        const lonTack = lonBoat + (xTack / (60 * Math.cos(toRad(latRef))));
-
-        const effTWAForVMG = isUpwind ? (twaInput + leeway) : (twaEff - leeway);
-        const vmg = stw * Math.cos(toRad(effTWAForVMG));
-
-        const time1 = (stw > 0) ? (dist1 / stw) * 60 : 0;
-        const time2 = (stw > 0) ? (dist2 / stw) * 60 : 0;
-        const totalTime = time1 + time2;
-        const totalDist = dist1 + dist2;
-
+        // AGGIORNAMENTO BANNERS SUPERIORI
         const titleEl = document.getElementById('favoredTackTitle');
-        const manovraText = isUpwind ? "VIRATA" : "ABBATTUTA";
+        const manovraText = plan.isUpwind ? "VIRATA" : "ABBATTUTA";
 
-        document.getElementById('lblLatManeuver').innerText = isUpwind ? "📍 Lat Virata" : "📍 Lat Abbattuta";
-        document.getElementById('lblLonManeuver').innerText = isUpwind ? "📍 Lon Virata" : "📍 Lon Abbattuta";
+        document.getElementById('lblLatManeuver').innerText = !plan.needsTwoLegs ? "Lat Destinazione" : (plan.isUpwind ? "Lat Virata" : "Lat Abbattuta");
+        document.getElementById('lblLonManeuver').innerText = !plan.needsTwoLegs ? "Lon Destinazione" : (plan.isUpwind ? "Lon Virata" : "Lon Abbattuta");
 
-        if (isUpwind) {
-            titleEl.innerHTML = `BORDO FAVOREVOLE: <span style="color:${favoredTack === 'STB' ? 'var(--green)' : 'var(--red)'}">${tack1Label}</span>`;
-            document.getElementById('bannerDetail').innerHTML = `Bolina verso Boa ${targetMark} (${distDirect.toFixed(2)} NM) | Manovra prevista: <b>${manovraText}</b> | Vento da ${twd}° a ${tws} kn`;
+        if (selectedLegState === 'ARRIVO') {
+            titleEl.innerHTML = `STATO REGATA: <span style="color:var(--green)">ARRIVO COMPLETATO 🏁</span>`;
+            document.getElementById('bannerDetail').innerHTML = `Navigazione conclusa per Boa ${plan.targetMark}. Tempo congelato.`;
+        } else if (!plan.needsTwoLegs) {
+            titleEl.innerHTML = `BORDO FAVOREVOLE: <span style="color:var(--green)">ROTTA DIRETTA (LAYLINE)</span>`;
+            document.getElementById('bannerDetail').innerHTML = `Navigazione diretta verso Boa ${plan.targetMark} (${plan.distDirect.toFixed(2)} NM) | Vento ${plan.twd}° a ${plan.tws} kn`;
         } else {
-            titleEl.innerHTML = `BORDO FAVOREVOLE (POPPA): <span style="color:${favoredTack === 'STB' ? 'var(--green)' : 'var(--red)'}">${tack1Label}</span>`;
-            document.getElementById('bannerDetail').innerHTML = `VMG Poppa/Lasco verso Boa ${targetMark} (${distDirect.toFixed(2)} NM) | Manovra prevista: <b>${manovraText}</b> | Vento da ${twd}° a ${tws} kn`;
+            const currentLegName = (selectedLegState === 1) ? "1° BORDO" : "2° BORDO";
+            titleEl.innerHTML = `BORDO ATTUALE: <span style="color:var(--cyan)">${currentLegName} (PRUA DINAMICA: ${roundedHdgWithLeeway}°)</span>`;
+            document.getElementById('bannerDetail').innerHTML = `Navigazione verso ${curTargetName} | Manovra prevista: <b>${manovraText}</b>`;
         }
 
-        document.getElementById('valHdg1').innerText = `${Math.round(hdg1)}°`;
-        document.getElementById('valDist1').innerText = `${dist1.toFixed(2)} NM`;
+        // SEZIONE SECONDARIA (MINORE EVIDENZA)
+        const time1 = (plan.stwEff > 0) ? (plan.dist1 / plan.stwEff) * 60 : 0;
+        const time2 = (plan.stwEff > 0) ? (plan.dist2 / plan.stwEff) * 60 : 0;
+        const totalTime = time1 + time2;
+        const totalDist = plan.dist1 + plan.dist2;
+        const vmgNet = (totalTime > 0) ? (plan.distDirect / (totalTime / 60)) : 0;
+
+        document.getElementById('lblTackTypeDetail').innerText = plan.tack1Label;
+        document.getElementById('valHdg1').innerText = `${Math.round(plan.hdg1)}°`;
+        document.getElementById('valDist1').innerText = `${plan.dist1.toFixed(2)} NM`;
         document.getElementById('valTime1').innerText = formatDuration(time1);
 
-        document.getElementById('valHdg2').innerText = `${Math.round(hdg2)}°`;
-        document.getElementById('valDist2').innerText = `${dist2.toFixed(2)} NM`;
+        document.getElementById('valHdg2').innerText = plan.hdg2 !== null ? `${Math.round(plan.hdg2)}°` : "--";
+        document.getElementById('valDist2').innerText = `${plan.dist2.toFixed(2)} NM`;
         document.getElementById('valTime2').innerText = formatDuration(time2);
 
-        document.getElementById('valLatTack').innerText = latTack.toFixed(4);
-        document.getElementById('valLonTack').innerText = lonTack.toFixed(4);
+        document.getElementById('valLatTack').innerText = plan.tackLat.toFixed(4);
+        document.getElementById('valLonTack').innerText = plan.tackLon.toFixed(4);
 
         document.getElementById('valTimeTotal').innerText = formatDuration(totalTime);
         document.getElementById('valDistTotal').innerText = `${totalDist.toFixed(2)} NM`;
-        document.getElementById('valVMG').innerText = `${Math.abs(vmg).toFixed(2)} kn`;
+        document.getElementById('valVMG').innerText = `${vmgNet.toFixed(2)} kn`;
 
-        updateSailsMatrix(boatName, tws, isUpwind);
-        drawTacticalMap(latBoat, lonBoat, latTarget, lonTarget, twd, tws, trackSTB, trackPORT, xM, yM, dSTB, dPORT, favoredTack, latTack, lonTack, isUpwind);
+        updateTimerDisplay();
+        updateSailsMatrix(boatName, plan.tws, plan.isUpwind);
+        
+        // Disegno Plotter Tattico
+        drawTacticalMap(plan, curLat, curLon, hdgBoatInput);
     }
 
-    // --- ALGORITMO DI SELEZIONE INTELLIGENTE DELLE VELE INVENTARIATE ---
     function updateSailsMatrix(boatName, tws, isUpwind) {
-        // Lettura dello stato delle checkbox inventario
         const inv = {
             genoa1: document.getElementById('sail_genoa1').checked,
             genoa2: document.getElementById('sail_genoa2').checked,
@@ -681,7 +107,6 @@
 
         let headsail = "--", mainsail = "--", heel = "--", advice = "";
 
-        // Funzione ausiliaria per scegliere la migliore vela da bolina disponibile
         function selectBestUpwindSail() {
             if (tws < 8) {
                 if (inv.genoa1) return "Genoa 1 (150% leggero)";
@@ -697,17 +122,15 @@
                 if (inv.solent) return "Fiocco Solent (100%)";
                 if (inv.genoa2) return "Genoa 2 (130% magro)";
                 if (inv.fiocco2) return "Fiocco 2 / Olimpico";
-                if (inv.genoa1) return "Genoa 1 (Sventato / Cazzato)";
+                if (inv.genoa1) return "Genoa 1 (Sventato)";
             } else {
                 if (inv.fiocco2) return "Fiocco 2 / Olimpico";
                 if (inv.solent) return "Fiocco Solent (100%)";
-                if (inv.genoa2) return "Genoa 2 (Terzarolato / Rullato)";
-                if (inv.genoa1) return "Genoa 1 (Molto Rullato)";
+                if (inv.genoa2) return "Genoa 2 (Terzarolato)";
             }
-            return "❌ Nessuna vela da prua disponibile!";
+            return "❌ Nessuna vela disponibile";
         }
 
-        // Funzione ausiliaria per scegliere la migliore vela portante disponibile
         function selectBestDownwindSail() {
             if (tws < 8) {
                 if (inv.spi_light) return "Spinnaker Leggero (S1)";
@@ -720,45 +143,32 @@
             } else if (tws <= 17) {
                 if (inv.spi_heavy) return "Spinnaker Pesante (S4)";
                 if (inv.gennaker) return "Gennaker";
-                if (inv.spi_light) return "Spinnaker Leggero (Attenzione raffiche!)";
             } else {
-                // Vento forte alle portanti
                 if (inv.gennaker) return "Gennaker Pesante / Lasco Stretto";
-                if (inv.spi_heavy) return "Spinnaker Pesante (Solo equipaggio esperto!)";
-                return selectBestUpwindSail() + " (A Forbice / No Spi)";
+                if (inv.spi_heavy) return "Spinnaker Pesante (Esp.)";
+                return selectBestUpwindSail() + " (A Forbice)";
             }
-
-            // Fallback: Se nessuna vela portante è spuntata
-            const bestPrua = selectBestUpwindSail();
-            return `${bestPrua} (⚠️ Nessuno Spi/Gennaker in Inventario)`;
+            return selectBestUpwindSail() + " (A Forbice)";
         }
 
-        // Assegnazione Vela Consigliata
-        if (isUpwind) {
-            headsail = selectBestUpwindSail();
-        } else {
-            headsail = selectBestDownwindSail();
-        }
+        headsail = isUpwind ? selectBestUpwindSail() : selectBestDownwindSail();
 
-        // Regolazioni Randa, Inclinazione e Consigli
         if (tws < 8) {
             mainsail = "Randa piena, trasto leggermente sopravvento, base lasca";
             heel = "8° - 11°";
-            advice = isUpwind 
-                ? `${boatName}: Mantieni la barca leggermente sbandata per dare forma alle vele in aria leggera.`
-                : `${boatName}: In poppa lasca la base randa e mantieni tangone/mura ben stabili.`;
+            advice = `${boatName}: Favorire la velocità stazzando l'equipaggio sottovento.`;
         } else if (tws <= 13) {
             mainsail = "Randa piena, trasto al centro, cunningham puntato";
             heel = "14° - 16°";
-            advice = `${boatName}: Passo ottimale. Mantenere la velocità al target VMG.`;
+            advice = `${boatName}: Assetto ottimale per VMG.`;
         } else if (tws <= 17) {
-            mainsail = "1a Mano di Terzaroli / Base tesa, trasto scaricato nelle raffiche";
+            mainsail = "1a Mano Terzaroli, cunningham teso, scaricare trasto nelle raffiche";
             heel = "17° - 19°";
-            advice = `${boatName}: Regola il trasto randa per evitare l'orza involontaria e la deriva.`;
+            advice = `${boatName}: Scaricare randa per contenere lo sbandamento.`;
         } else {
-            mainsail = "2a Mano di Terzaroli / Cunningham cazzatissimo, trasto sottovento";
+            mainsail = "2a Mano Terzaroli, cunningham cazzato a ferro, trasto sottovento";
             heel = "20° - 22°";
-            advice = `${boatName}: Vento forte. Priorità al controllo dell'imbarcazione e peso del corpo a baluardo.`;
+            advice = `${boatName}: Controllare l'orza e la stabilità.`;
         }
 
         document.getElementById('recHeadsail').innerText = headsail;
@@ -767,7 +177,7 @@
         document.getElementById('tacticalAdvice').innerHTML = `💡 <b>Consiglio Assetto (${boatName}):</b> ${advice}`;
     }
 
-    function drawTacticalMap(latB, lonB, latM, lonM, twd, tws, trackSTB, trackPORT, xM, yM, dSTB, dPORT, favoredTack, latTack, lonTack, isUpwind) {
+    function drawTacticalMap(plan, curLat, curLon, hdgBoat) {
         const canvas = document.getElementById('tacticalCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = canvas.parentElement.clientWidth;
@@ -775,11 +185,27 @@
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        const refLat = plan.startLat;
+        const refLon = plan.startLon;
+
+        const getNMCoords = (lat, lon) => ({
+            x: (lon - refLon) * Math.cos(toRad(refLat)) * 60,
+            y: (lat - refLat) * 60
+        });
+
+        const pStartNM = { x: 0, y: 0 };
+        const pTargetNM = getNMCoords(plan.targetLat, plan.targetLon);
+        const pTackNM = getNMCoords(plan.tackLat, plan.tackLon);
+        const pCurBoatNM = getNMCoords(curLat, curLon);
+
         const margin = 60;
-        const minX = Math.min(0, xM);
-        const maxX = Math.max(0, xM);
-        const minY = Math.min(0, yM);
-        const maxY = Math.max(0, yM);
+        const allX = [pStartNM.x, pTargetNM.x, pTackNM.x, pCurBoatNM.x];
+        const allY = [pStartNM.y, pTargetNM.y, pTackNM.y, pCurBoatNM.y];
+
+        const minX = Math.min(...allX);
+        const maxX = Math.max(...allX);
+        const minY = Math.min(...allY);
+        const maxY = Math.max(...allY);
 
         const spanX = Math.max(maxX - minX, 0.5);
         const spanY = Math.max(maxY - minY, 0.5);
@@ -791,32 +217,24 @@
         const cx = canvas.width / 2 - ((minX + maxX) / 2) * scale;
         const cy = canvas.height / 2 + ((minY + maxY) / 2) * scale;
 
-        const toCanvas = (x, y) => ({
-            x: cx + x * scale,
-            y: cy - y * scale
+        const toCanvas = (nmPt) => ({
+            x: cx + nmPt.x * scale,
+            y: cy - nmPt.y * scale
         });
 
-        const pBoat = toCanvas(0, 0);
-        const pMark = toCanvas(xM, yM);
+        const cStart = toCanvas(pStartNM);
+        const cTarget = toCanvas(pTargetNM);
+        const cTack = toCanvas(pTackNM);
+        const cCurBoat = toCanvas(pCurBoatNM);
 
-        let pTack;
-        if (favoredTack === 'STB') {
-            const rad = toRad(90 - trackSTB);
-            pTack = toCanvas(dSTB * Math.cos(rad), dSTB * Math.sin(rad));
-        } else {
-            const rad = toRad(90 - trackPORT);
-            pTack = toCanvas(dPORT * Math.cos(rad), dPORT * Math.sin(rad));
-        }
-
-        // --- VETTORI VENTO DI SFONDO ---
-        const radTwd = toRad(twd);
+        const radTwd = toRad(plan.twd);
         const dxWind = -Math.sin(radTwd);
         const dyWind = Math.cos(radTwd);
 
         ctx.strokeStyle = 'rgba(245, 158, 11, 0.12)';
         ctx.lineWidth = 1.5;
         const step = 80;
-        const windLineLen = 14 + Math.min(tws, 30) * 0.8;
+        const windLineLen = 14 + Math.min(plan.tws, 30) * 0.8;
 
         for (let x = 40; x < canvas.width - 120; x += step) {
             for (let y = 60; y < canvas.height - 40; y += step) {
@@ -833,7 +251,6 @@
             }
         }
 
-        // --- ROSA DEI VENTI / BUSSOLA ---
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -844,21 +261,16 @@
         ctx.textAlign = 'center';
         ctx.fillText('N', 45, 30);
 
-        // --- RIQUADRO VENTO ---
         const wBoxX = canvas.width - 70;
         const wBoxY = 60;
-        const arrowLen = Math.min(30 + tws * 2, 65); 
-        const arrowWidth = Math.min(2 + tws * 0.2, 6);
+        const arrowLen = Math.min(30 + plan.tws * 2, 65); 
 
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        if (ctx.roundRect) {
-            ctx.roundRect(wBoxX - 50, wBoxY - 45, 100, 105, 8);
-        } else {
-            ctx.rect(wBoxX - 50, wBoxY - 45, 100, 105);
-        }
+        if (ctx.roundRect) ctx.roundRect(wBoxX - 50, wBoxY - 45, 100, 105, 8);
+        else ctx.rect(wBoxX - 50, wBoxY - 45, 100, 105);
         ctx.fill();
         ctx.stroke();
 
@@ -873,80 +285,100 @@
         const wy2 = wBoxY + 5 + dyWind * (arrowLen / 2);
 
         ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = arrowWidth;
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(wx1, wy1);
         ctx.lineTo(wx2, wy2);
         ctx.stroke();
 
-        const headLen = 8 + arrowWidth;
-        const angleArr = Math.atan2(wy2 - wy1, wx2 - wx1);
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.moveTo(wx2, wy2);
-        ctx.lineTo(wx2 - headLen * Math.cos(angleArr - Math.PI / 6), wy2 - headLen * Math.sin(angleArr - Math.PI / 6));
-        ctx.lineTo(wx2 - headLen * Math.cos(angleArr + Math.PI / 6), wy2 - headLen * Math.sin(angleArr + Math.PI / 6));
-        ctx.closePath();
-        ctx.fill();
-
         ctx.fillStyle = '#f59e0b';
         ctx.font = 'bold 12px sans-serif';
-        ctx.fillText(`${twd}° / ${tws} kn`, wBoxX, wBoxY + 50);
+        ctx.fillText(`${plan.twd}° / ${plan.tws} kn`, wBoxX, wBoxY + 50);
 
-        // --- LINEA DIRETTA ALLA BOA ---
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.moveTo(pBoat.x, pBoat.y);
-        ctx.lineTo(pMark.x, pMark.y);
+        ctx.moveTo(cStart.x, cStart.y);
+        ctx.lineTo(cTarget.x, cTarget.y);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // --- BORDI E LAYLINES ---
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = favoredTack === 'STB' ? '#10b981' : '#ef4444';
+        const isLeg1Active = (selectedLegState === 1);
+        ctx.lineWidth = isLeg1Active ? 6 : 2;
+        ctx.strokeStyle = (plan.favoredTack === 'STB') ? '#10b981' : '#ef4444';
+        if (!isLeg1Active) ctx.strokeStyle += '60';
         ctx.beginPath();
-        ctx.moveTo(pBoat.x, pBoat.y);
-        ctx.lineTo(pTack.x, pTack.y);
+        ctx.moveTo(cStart.x, cStart.y);
+        ctx.lineTo(cTack.x, cTack.y);
         ctx.stroke();
 
-        ctx.strokeStyle = favoredTack === 'STB' ? '#ef4444' : '#10b981';
-        ctx.beginPath();
-        ctx.moveTo(pTack.x, pTack.y);
-        ctx.lineTo(pMark.x, pMark.y);
-        ctx.stroke();
+        if (plan.needsTwoLegs) {
+            const isLeg2Active = (selectedLegState === 2);
+            ctx.lineWidth = isLeg2Active ? 6 : 2;
+            ctx.strokeStyle = (plan.favoredTack === 'STB') ? '#ef4444' : '#10b981';
+            if (!isLeg2Active) ctx.strokeStyle += '60';
+            ctx.beginPath();
+            ctx.moveTo(cTack.x, cTack.y);
+            ctx.lineTo(cTarget.x, cTarget.y);
+            ctx.stroke();
+        }
 
-        // --- ICONA BARCA ---
-        ctx.fillStyle = '#06b6d4';
+        ctx.fillStyle = '#64748b';
         ctx.beginPath();
-        ctx.arc(pBoat.x, pBoat.y, 7, 0, Math.PI * 2);
+        ctx.arc(cStart.x, cStart.y, 5, 0, Math.PI * 2);
         ctx.fill();
+
+        if (plan.needsTwoLegs) {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(cTack.x, cTack.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = 'bold 10px sans-serif';
+            ctx.fillStyle = '#f59e0b';
+            const maneuverName = plan.isUpwind ? 'VIRATA' : 'ABBATTUTA';
+            ctx.fillText(`${maneuverName}`, cTack.x + 8, cTack.y + 3);
+        }
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(cTarget.x, cTarget.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(`BOA ${plan.targetMark}`, cTarget.x - 18, cTarget.y - 12);
+
+        // Disegno freccia barca orientata alla prua GPS/Simulata
+        drawBoatArrowSymbol(ctx, cCurBoat.x, cCurBoat.y, hdgBoat, "#06b6d4");
         ctx.fillStyle = '#ffffff';
-        ctx.font = '10px sans-serif';
+        ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('BARCA', pBoat.x - 18, pBoat.y + 18);
+        ctx.fillText(`BARCA (${Math.round(hdgBoat)}°)`, cCurBoat.x + 16, cCurBoat.y + 4);
+    }
 
-        // --- ICONA BOA ---
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.arc(pMark.x, pMark.y, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillText('BOA', pMark.x - 12, pMark.y - 12);
+    function drawBoatArrowSymbol(ctx, x, y, headingDeg, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(toRad(headingDeg));
 
-        // --- PUNTO DI VIRATA / ABBATTUTA ---
-        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(pTack.x, pTack.y, 5, 0, Math.PI * 2);
+        ctx.moveTo(0, -18);
+        ctx.lineTo(-9, 12);
+        ctx.lineTo(0, 6);
+        ctx.lineTo(9, 12);
+        ctx.closePath();
+
+        ctx.fillStyle = color;
         ctx.fill();
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillStyle = '#f59e0b';
-        const maneuverName = isUpwind ? 'VIRATA' : 'ABBATTUTA';
-        ctx.fillText(`${maneuverName} (${latTack.toFixed(3)}, ${lonTack.toFixed(3)})`, pTack.x + 8, pTack.y + 3);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.restore();
     }
 
     window.onload = () => {
-        calculateTactics();
+        recalculateRoutePlan();
+        alignHeadingToRoute();
     };
 </script>
 
