@@ -303,7 +303,7 @@
 
  #plotterContainer {
  width: 100%;
- height: 480px;
+ height: clamp(340px, 60vh, 560px);
  background: #070d19;
  border-radius: 8px;
  border: 1px solid var(--border);
@@ -368,6 +368,56 @@
  display: inline-block;
  transition: transform 0.2s ease;
  }
+
+ /* ---------- Header / toolbar ---------- */
+ .toolbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: flex-end; }
+ .tool-group {
+ display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+ padding: 4px 6px;
+ background: rgba(255,255,255,0.03);
+ border: 1px solid var(--border);
+ border-radius: 8px;
+ }
+
+ .tool-group select { width: auto; max-width: 240px; }
+ .tool-group label { white-space: nowrap; }
+
+ /* ---------- Sidebar a schede ---------- */
+ .input-sidebar { min-width: 0; }
+ @media (min-width: 961px) {
+ .input-sidebar {
+ position: sticky; top: 10px; align-self: start;
+ max-height: calc(100vh - 20px); overflow-y: auto; padding-right: 4px;
+ }
+ }
+ .side-tabs {
+ display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+ margin-bottom: 12px;
+ position: sticky; top: 0; z-index: 5;
+ background: var(--bg-dark); padding-bottom: 4px;
+ }
+ .side-tab {
+ background: var(--bg-input); color: var(--text-muted);
+ border: 1px solid var(--border); border-radius: 8px;
+ padding: 6px 2px; cursor: pointer;
+ font-size: 0.68rem; font-weight: 700; line-height: 1.2;
+ display: flex; flex-direction: column; align-items: center; gap: 1px;
+ }
+ .side-tab span { font-size: 1.05rem; }
+ .side-tab:hover { border-color: var(--cyan); color: var(--text); }
+ .side-tab.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
+ .side-pane { display: none; }
+ .side-pane.active { display: block; }
+
+ /* ---------- Plotter + Vele affiancati su schermi larghi ---------- */
+ .dashboard-main { min-width: 0; }
+ .plot-row { display: block; }
+ @media (min-width: 1400px) {
+ .plot-row { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 15px; align-items: start; }
+ .plot-row .sail-info-box { grid-template-columns: 1fr; }
+ }
+ .tactical-banner { padding: 12px; }
+ .hero-target-card { padding: 12px; margin-bottom: 10px; }
  </style>
 </head>
 <body>
@@ -377,8 +427,10 @@
  <h1>⛵ TatticaRegata Pro</h1>
  <div class="subtitle">Assistente Tattico Linea di Partenza & Ottimizzatore di Rotta</div>
  </div>
- <div class="btn-group">
- <label style="font-size:0.8rem; color:var(--amber);">Preset Barca:</label>
+ <div class="toolbar">
+ <!-- Barca / GPS / Vista -->
+ <div class="tool-group">
+ <label style="font-size:0.8rem; color:var(--amber);">Preset:</label>
  <select id="presetSelector" class="btn" onchange="applyBoatPreset()">
  <optgroup label="Dufour 31">
  <option value="dufour6">Dufour 31 - Brezza Leggera (6 kn)</option>
@@ -405,68 +457,90 @@
  <option value="comet910_18">Comet 910 - Vento Forte (18 kn)</option>
  </optgroup>
  </select>
-
  <button id="gpsBtn" class="btn btn-amber" onclick="toggleGPS()">📡 Attiva GPS Reale</button>
  <button id="viewModeToggleBtn" class="btn btn-gold" onclick="toggleViewMode()">🏁 Vista Partenza</button>
+ </div>
 
- <!-- SAVE & LOAD CONTROLS -->
- <button id="saveBtn" class="btn btn-green" onclick="manualSaveSettings()">💾 Salva Ora</button>
- <button id="resetStorageBtn" class="btn btn-red" onclick="resetStoredSettings()">🗑️ Reset Dati</button>
-
- <!-- WIND MATRIX TOGGLE BUTTON -->
- <button id="btnToggleMatrixHeader" class="btn btn-cyan" onclick="toggleWindMatrix()">💨 Matrice del Vento</button>
-
- <!-- TIMER CONTROLS -->
+ <!-- Timer di partenza (le regolazioni +/- e SYNC sono nel riquadro del conto alla rovescia) -->
+ <div class="tool-group">
  <select id="startTimerSelect" class="btn" style="width: auto;">
  <option value="300">5 Minuti (5-4-1-0)</option>
  <option value="240">4 Minuti</option>
  <option value="60">1 Minuto</option>
  </select>
  <button id="timerStartBtn" class="btn btn-amber" onclick="startStartSequence()">⏱️ Avvia Partenza</button>
-
- <div class="btn-group" style="gap:2px;">
- <button class="btn" onclick="adjustTimer(60)" title="Aggiungi 1 minuto">+1m</button>
- <button class="btn" onclick="adjustTimer(-60)" title="Sottrai 1 minuto">-1m</button>
- <button class="btn" onclick="adjustTimer(10)" title="Aggiungi 10 secondi">+10s</button>
- <button class="btn" onclick="adjustTimer(-10)" title="Sottrai 10 secondi">-10s</button>
- <button class="btn btn-cyan" onclick="syncTimer()" title="Sincronizza al minuto più vicino">SYNC 🔔</button>
- </div>
-
  <button id="timerStopBtn" class="btn btn-red" onclick="stopRegattaTimer()">⏹️ STOP</button>
  <button class="btn" onclick="resetTimer()">🔄 Azzera</button>
+ </div>
 
- <!-- CALC TRIGGER -->
- <button class="btn btn-cyan btn-calc-trigger" onclick="onCalculatePressed(this)">🎯 CALCOLA PROSSIMO BORDO</button>
+ <!-- Ricalcolo -->
+ <div class="tool-group">
+ <button class="btn btn-cyan btn-calc-trigger" onclick="onCalculatePressed(this)" title="Ricalcola il piano di rotta">🔁 Ricalcola</button>
+ </div>
+
+ <!-- Salvataggio -->
+ <div class="tool-group">
+ <button id="saveBtn" class="btn btn-green" onclick="manualSaveSettings()">💾 Salva Ora</button>
+ <button id="resetStorageBtn" class="btn btn-red" onclick="resetStoredSettings()">🗑️ Reset Dati</button>
+ </div>
  </div>
 </header>
 
 <div class="grid-layout">
- <div class="input-sidebar">
- <!-- WIND MATRIX CONFIG CARD -->
+<div class="input-sidebar">
+ <!-- TAB BAR -->
+ <div class="side-tabs" role="tablist">
+ <button type="button" class="side-tab active" id="tab-nav" onclick="showSideTab('nav')"><span>🧭</span>Navigazione</button>
+ <button type="button" class="side-tab" id="tab-campo" onclick="showSideTab('campo')"><span>🏁</span>Campo</button>
+ <button type="button" class="side-tab" id="tab-barca" onclick="showSideTab('barca')"><span>⛵</span>Barca</button>
+ <button type="button" class="side-tab" id="tab-vento" onclick="showSideTab('vento')"><span>💨</span>Matrice</button>
+ </div>
+
+ <div class="side-pane active" id="pane-nav">
+ <!-- NAVIGAZIONE: posizione + vento base -->
+ <!-- BOAT POSITION CARD -->
  <div class="card">
  <div class="card-title">
- <span>💨 Matrice del Vento Interattiva</span>
- <span class="badge" style="background:#1e293b; color:var(--cyan)">Meteo Locale</span>
+ <span>📍 Posizione & Stato Navigazione</span>
  </div>
  <div class="form-row">
+ <div class="form-group"><label>Latitudine Barca</label><input type="number" id="latBoat" value="40.7082" step="0.0001" onchange="requestRecalc()"></div>
+ <div class="form-group"><label>Longitudine Barca</label><input type="number" id="lonBoat" value="14.4600" step="0.0001" onchange="requestRecalc()"></div>
+ </div>
+ <div class="form-row" style="margin-top:6px;">
  <div class="form-group">
- <label>Righe (m, max 9)</label>
- <input type="number" id="matrixRowsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()">
+ <label>Prua / COG Attuale (°)</label>
+ <div style="display:flex; gap:5px;">
+ <input type="number" id="hdgBoat" value="10" min="0" max="359" onchange="updateLiveStatus()">
+ <button class="btn btn-amber" style="padding:0 10px; font-size:0.9rem;" title="Allinea prua al bordo attivo" onclick="alignHeadingToRoute()">🎯</button>
+ </div>
  </div>
  <div class="form-group">
- <label>Colonne (n, max 9)</label>
- <input type="number" id="matrixColsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()">
+ <label>Stato Regata</label>
+ <button id="btnArrivo" class="btn btn-green" style="width:100%; padding:7px 0;" onclick="setLegState('ARRIVO')">🏁 Arrivo / Congela</button>
  </div>
- </div>
- <button id="btnToggleMatrix" class="btn btn-cyan" style="width:100%; margin-top:4px;" onclick="toggleWindMatrix()">💨 Matrice del Vento</button>
- <div style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;">
- 💡 <b>Legenda Colori Plotter:</b><br>
- 🟣 <i>Viola</i>: Meno vento rispetto alla base<br>
- 🟢 <i>Verde</i>: Più vento rispetto alla base<br>
- ⬇️ <i>Freccia</i>: Direzione in cui soffia il vento
  </div>
  </div>
 
+ <!-- WIND CONDITIONS CARD -->
+ <div class="card">
+ <div class="card-title">
+ <span>💨 Condizioni Vento Base</span>
+ </div>
+ <div class="form-row">
+ <div class="form-group">
+ <label>Direzione Vento (Globale) (°)</label>
+ <input type="number" id="twd" value="10" min="0" max="359" onchange="updateGlobalWind()">
+ </div>
+ <div class="form-group">
+ <label>Intensità Vento (Globale) (kn)</label>
+ <input type="number" id="tws" value="10" min="1" max="50" onchange="updateGlobalWind()">
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div class="side-pane" id="pane-campo">
  <!-- LINEA DI PARTENZA CARD -->
  <div class="card">
  <div class="card-title">
@@ -489,6 +563,28 @@
  <button class="btn btn-amber" style="width:100%; margin-bottom:10px; padding:4px 8px; font-size:0.75rem;" onclick="pingPin()">📍 Ping GPS Posizione Boa Pin</button>
  </div>
 
+ <!-- MARKS & COURSE CONFIG -->
+ <div class="card">
+ <div class="card-title">
+ <span>🏁 Campo di Regata & Boe</span>
+ <button class="btn btn-cyan" style="padding: 2px 8px; font-size:0.75rem;" onclick="addMark()">+ Aggiungi Boa</button>
+ </div>
+ 
+ <div class="form-group" style="margin-bottom:12px;">
+ <label style="color:var(--amber); font-weight:bold;">🎯 Prossima Boa Obiettivo (Obbligatoria)</label>
+ <select id="targetMarkSelect" onchange="requestRecalc(0)" style="border: 2px solid var(--amber);">
+ <!-- Popolato dinamicamente -->
+ </select>
+ </div>
+
+ <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Configurazione Coordinate Boe:</div>
+ <div id="marksListContainer" style="max-height: 280px; overflow-y: auto; padding-right:2px;">
+ <!-- Content generated via JS -->
+ </div>
+ </div>
+ </div>
+
+ <div class="side-pane" id="pane-barca">
  <!-- BOAT DATA CARD -->
  <div class="card">
  <div class="card-title">
@@ -502,27 +598,36 @@
  </div>
  <div class="form-group">
  <label>Velocità Bolina (kn)</label>
- <input type="number" id="targetSTW" value="5.0" step="0.1" onchange="updateLiveStatus()">
+ <input type="number" id="targetSTW" value="5.0" step="0.1" onchange="requestRecalc()">
  </div>
  </div>
  <div class="form-row">
  <div class="form-group">
  <label>Velocità Poppa (kn)</label>
- <input type="number" id="targetSTWDown" value="4.8" step="0.1" onchange="updateLiveStatus()">
+ <input type="number" id="targetSTWDown" value="4.8" step="0.1" onchange="requestRecalc()">
  </div>
  <div class="form-group">
  <label>Angolo Bolina Target (°)</label>
- <input type="number" id="targetTWA" value="44" step="1" onchange="updateLiveStatus()">
+ <input type="number" id="targetTWA" value="44" step="1" onchange="requestRecalc()">
  </div>
  </div>
  <div class="form-row">
  <div class="form-group">
  <label>Angolo Poppa Target (°)</label>
- <input type="number" id="targetTWADown" value="165" step="1" onchange="updateLiveStatus()">
+ <input type="number" id="targetTWADown" value="165" step="1" onchange="requestRecalc()">
  </div>
  <div class="form-group">
  <label>Scarroccio Stimato (°)</label>
- <input type="number" id="leeway" value="6" step="1" onchange="updateLiveStatus()">
+ <input type="number" id="leeway" value="6" step="1" onchange="requestRecalc()">
+ </div>
+ </div>
+ <div class="form-row">
+ <div class="form-group">
+ <label>Velocità Traverso 90° (kn, opz.)</label>
+ <input type="number" id="targetSTWReach" placeholder="auto" min="0" step="0.1" onchange="requestRecalc()">
+ </div>
+ <div style="font-size:0.7rem; color:var(--text-muted); align-self:end; padding-bottom:6px;">
+ Se vuota: stimata dalla bolina. Inseriscila se conosci la polare reale.
  </div>
  </div>
  </div>
@@ -547,64 +652,37 @@
  <label><input type="checkbox" id="sail_gennaker" checked onchange="updateLiveStatus()"> Gennaker / Code 0</label>
  </div>
  </div>
+ </div>
 
- <!-- WIND CONDITIONS CARD -->
+ <div class="side-pane" id="pane-vento">
+ <!-- WIND MATRIX CONFIG CARD -->
  <div class="card">
  <div class="card-title">
- <span>💨 Condizioni Vento Base</span>
+ <span>💨 Matrice del Vento Interattiva</span>
+ <span class="badge" style="background:#1e293b; color:var(--cyan)">Meteo Locale</span>
  </div>
  <div class="form-row">
  <div class="form-group">
- <label>Direzione Vento (Globale) (°)</label>
- <input type="number" id="twd" value="10" min="0" max="359" onchange="updateGlobalWind()">
+ <label>Righe (m, max 9)</label>
+ <input type="number" id="matrixRowsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()">
  </div>
  <div class="form-group">
- <label>Intensità Vento (Globale) (kn)</label>
- <input type="number" id="tws" value="10" min="1" max="50" onchange="updateGlobalWind()">
+ <label>Colonne (n, max 9)</label>
+ <input type="number" id="matrixColsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()">
  </div>
  </div>
+ <button id="btnToggleMatrix" class="btn btn-cyan" style="width:100%; margin-top:4px;" onclick="toggleWindMatrix()">💨 Matrice del Vento</button>
+ <div style="display:flex; gap:6px; margin-top:6px;">
+ <button class="btn" style="flex:1; font-size:0.72rem;" onclick="fitWindBoxToCourse(true)" title="Ricalcola il riquadro geografico da boe e linea di partenza">📐 Adatta riquadro al campo</button>
+ <button class="btn" style="flex:1; font-size:0.72rem;" onclick="resetMatrixToBase()" title="Azzera le differenze tra le celle">↺ Uniforma al vento base</button>
  </div>
-
- <!-- MARKS & COURSE CONFIG -->
- <div class="card">
- <div class="card-title">
- <span>🏁 Campo di Regata & Boe</span>
- <button class="btn btn-cyan" style="padding: 2px 8px; font-size:0.75rem;" onclick="addMark()">+ Aggiungi Boa</button>
- </div>
- 
- <div class="form-group" style="margin-bottom:12px;">
- <label style="color:var(--amber); font-weight:bold;">🎯 Prossima Boa Obiettivo (Obbligatoria)</label>
- <select id="targetMarkSelect" onchange="updateLiveStatus()" style="border: 2px solid var(--amber);">
- <!-- Popolato dinamicamente -->
- </select>
- </div>
-
- <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Configurazione Coordinate Boe:</div>
- <div id="marksListContainer" style="max-height: 280px; overflow-y: auto; padding-right:2px;">
- <!-- Content generated via JS -->
- </div>
- </div>
-
- <!-- BOAT POSITION CARD -->
- <div class="card">
- <div class="card-title">
- <span>📍 Posizione & Stato Navigazione</span>
- </div>
- <div class="form-row">
- <div class="form-group"><label>Latitudine Barca</label><input type="number" id="latBoat" value="40.7082" step="0.0001" onchange="updateLiveStatus()"></div>
- <div class="form-group"><label>Longitudine Barca</label><input type="number" id="lonBoat" value="14.4600" step="0.0001" onchange="updateLiveStatus()"></div>
- </div>
- <div class="form-row" style="margin-top:6px;">
- <div class="form-group">
- <label>Prua / COG Attuale (°)</label>
- <div style="display:flex; gap:5px;">
- <input type="number" id="hdgBoat" value="10" min="0" max="359" onchange="updateLiveStatus()">
- <button class="btn btn-amber" style="padding:0 10px; font-size:0.9rem;" title="Allinea prua al bordo attivo" onclick="alignHeadingToRoute()">🎯</button>
- </div>
- </div>
- <div class="form-group">
- <label>Stato Regata</label>
- <button id="btnArrivo" class="btn btn-green" style="width:100%; padding:7px 0;" onclick="setLegState('ARRIVO')">🏁 Arrivo / Congela</button>
+ <div id="matrixBoxInfo" style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;"></div>
+ <div style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;">
+ 💡 <b>Legenda Colori Plotter:</b><br>
+ 🟣 <i>Viola</i>: Meno vento rispetto alla base<br>
+ 🟢 <i>Verde</i>: Più vento rispetto alla base<br>
+ ⬇️ <i>Freccia</i>: Direzione in cui soffia il vento<br>
+ 📍 Le celle sono ancorate alle coordinate del campo (riquadro tratteggiato), non allo schermo: il vento è interpolato tra i centri delle celle. Cambiare TWD/TWS base sposta tutto il campo mantenendo le differenze.
  </div>
  </div>
  </div>
@@ -613,7 +691,7 @@
  <!-- MAIN DASHBOARD -->
  <div class="dashboard-main">
  <div class="tactical-banner" id="bannerCard">
- <div id="favoredTackTitle" class="banner-highlight">BORDO FAVOREVOLE: CLICCA CALCOLA PROSSIMO BORDO</div>
+ <div id="favoredTackTitle" class="banner-highlight">BORDO FAVOREVOLE: CLICCA RICALCOLA</div>
  <div id="bannerDetail" class="banner-sub">--</div>
 
  <!-- HERO DASHBOARD CONTAINER -->
@@ -698,6 +776,7 @@
  </div>
  </div>
 
+ <div class="plot-row">
  <!-- CANVAS PLOTTER CARD -->
  <div class="card" style="padding:10px;">
  <div class="card-title" style="margin-bottom:8px;">
@@ -731,6 +810,7 @@
  </div>
  <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);" id="tacticalAdvice">
  💡 <b>Consiglio Tattico:</b> Caricamento in corso...
+ </div>
  </div>
  </div>
  </div>
@@ -777,6 +857,11 @@
  let windMatrixActive = false;
  let windMatrixGrid = [];
  let windDirMatrixGrid = [];
+ let windGridBox = null;   // riquadro geografico a cui è ancorata la matrice {latMin, latMax, lonMin, lonMax}
+ let baseWindRef = null;   // ultimo vento base (TWD/TWS) applicato alla matrice: il vento base SPOSTA il campo
+ let recalcTimer = null;
+ let lastRecalcTs = 0;
+ const RECALC_MIN_INTERVAL_MS = 700;
 
  // TIMER STATES
  let timerState = 'IDLE'; 
@@ -784,6 +869,17 @@
  let timerInterval = null;
 
  let gpsWatchId = null;
+
+
+ // --- SCHEDE PANNELLO LATERALE ---
+ function showSideTab(name) {
+ ['nav', 'campo', 'barca', 'vento'].forEach(n => {
+ const pane = document.getElementById('pane-' + n);
+ const tab = document.getElementById('tab-' + n);
+ if (pane) pane.classList.toggle('active', n === name);
+ if (tab) tab.classList.toggle('active', n === name);
+ });
+ }
 
  const toRad = deg => deg * Math.PI / 180;
  const toDeg = rad => rad * 180 / Math.PI;
@@ -799,6 +895,7 @@
  targetTWA: document.getElementById('targetTWA').value,
  targetTWADown: document.getElementById('targetTWADown').value,
  leeway: document.getElementById('leeway').value,
+ targetSTWReach: document.getElementById('targetSTWReach') ? document.getElementById('targetSTWReach').value : '',
 
  latGiuria: document.getElementById('latGiuria').value,
  lonGiuria: document.getElementById('lonGiuria').value,
@@ -820,6 +917,8 @@
  matrixCols: matrixCols,
  windMatrixGrid: windMatrixGrid,
  windDirMatrixGrid: windDirMatrixGrid,
+ windGridBox: windGridBox,
+ baseWindRef: baseWindRef,
 
  sails: {
  genoa1: document.getElementById('sail_genoa1').checked,
@@ -852,6 +951,7 @@
  if (data.targetTWA) document.getElementById('targetTWA').value = data.targetTWA;
  if (data.targetTWADown) document.getElementById('targetTWADown').value = data.targetTWADown;
  if (data.leeway) document.getElementById('leeway').value = data.leeway;
+ if (data.targetSTWReach !== undefined && document.getElementById('targetSTWReach')) document.getElementById('targetSTWReach').value = data.targetSTWReach;
 
  if (data.latGiuria) document.getElementById('latGiuria').value = data.latGiuria;
  if (data.lonGiuria) document.getElementById('lonGiuria').value = data.lonGiuria;
@@ -883,9 +983,18 @@
  }
  if (Array.isArray(data.windDirMatrixGrid) && data.windDirMatrixGrid.length > 0) {
  windDirMatrixGrid = data.windDirMatrixGrid;
- } else {
- initWindMatrix();
  }
+ const gb = data.windGridBox;
+ if (gb && [gb.latMin, gb.latMax, gb.lonMin, gb.lonMax].every(Number.isFinite) && gb.latMax > gb.latMin && gb.lonMax > gb.lonMin) {
+ windGridBox = gb;
+ }
+ if (data.baseWindRef && Number.isFinite(data.baseWindRef.twd) && Number.isFinite(data.baseWindRef.tws)) {
+ baseWindRef = data.baseWindRef;
+ }
+ if (!gridsAreValid()) initWindMatrix();
+ if (!baseWindRef) { const bw = baseWindFromInputs(); baseWindRef = { twd: bw.twd, tws: bw.tws }; }
+ if (!windGridBox) fitWindBoxToCourse(false);
+ updateMatrixBoxInfo();
 
  if (data.sails) {
  if (data.sails.genoa1 !== undefined) document.getElementById('sail_genoa1').checked = data.sails.genoa1;
@@ -931,77 +1040,257 @@
  }
 
  // --- WIND MATRIX FUNCTIONS ---
+ // La matrice è ANCORATA A UN RIQUADRO GEOGRAFICO (windGridBox, in lat/lon), non allo schermo.
+ // Ogni cella vale nel proprio centro; tra i centri il vento è interpolato in modo bilineare
+ // (intensità lineare, direzione tramite componenti seno/coseno). Fuori dal riquadro vale il valore del bordo.
+
+ function normDeg(a) { return ((a % 360) + 360) % 360; }
+ function signedDiff(a, b) { return normDeg(a - b + 180) - 180; }   // a - b, in [-180, 180)
+ function angDiff(a, b) { return Math.abs(signedDiff(a, b)); }
+ function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+ function baseWindFromInputs() {
+ const tws = parseFloat(document.getElementById('tws').value);
+ const twd = parseFloat(document.getElementById('twd').value);
+ return { tws: Number.isFinite(tws) ? tws : 10, twd: Number.isFinite(twd) ? normDeg(twd) : 0 };
+ }
+
+ function gridsAreValid() {
+ const ok = g => Array.isArray(g) && g.length === matrixRows &&
+ g.every(r => Array.isArray(r) && r.length === matrixCols && r.every(Number.isFinite));
+ return ok(windMatrixGrid) && ok(windDirMatrixGrid);
+ }
+
  function initWindMatrix() {
- const baseTws = parseFloat(document.getElementById('tws').value) || 10;
- const baseTwd = parseFloat(document.getElementById('twd').value) || 0;
- 
+ const b = baseWindFromInputs();
  windMatrixGrid = [];
  windDirMatrixGrid = [];
- 
  for (let r = 0; r < matrixRows; r++) {
- let rowSpeed = [];
- let rowDir = [];
- for (let c = 0; c < matrixCols; c++) {
- rowSpeed.push(baseTws);
- rowDir.push(baseTwd);
+ windMatrixGrid.push(new Array(matrixCols).fill(b.tws));
+ windDirMatrixGrid.push(new Array(matrixCols).fill(b.twd));
  }
- windMatrixGrid.push(rowSpeed);
- windDirMatrixGrid.push(rowDir);
- }
+ baseWindRef = { twd: b.twd, tws: b.tws };
+ if (!windGridBox) fitWindBoxToCourse(false);
  }
 
- function updateGlobalWind() {
- const baseTws = parseFloat(document.getElementById('tws').value) || 10;
- const baseTwd = parseFloat(document.getElementById('twd').value) || 0;
- 
- for (let r = 0; r < matrixRows; r++) {
- for (let c = 0; c < matrixCols; c++) {
- if (windMatrixGrid[r]) windMatrixGrid[r][c] = baseTws;
- if (windDirMatrixGrid[r]) windDirMatrixGrid[r][c] = baseTwd;
+ // Parametri di scala del plotter in Vista Campo: margine (px) attorno a barca, boe e punti di virata/abbattuta.
+ const CAMPO_MARGIN_PX = 40;
+ const CAMPO_MIN_SPAN_NM = 0.3;
+ let lastBoxAutoFitTs = 0;
+
+ // Dimensioni (px) dell'area del plotter: il riquadro del vento coincide con quest'area.
+ function getPlotterSize() {
+ const c = document.getElementById('plotterContainer');
+ const W = c ? c.clientWidth : 0, H = c ? c.clientHeight : 0;
+ return { W: W > 2 * CAMPO_MARGIN_PX + 20 ? W : 800, H: H > 2 * CAMPO_MARGIN_PX + 20 ? H : 480 };
  }
+
+ // Punti che devono restare visibili in Vista Campo: barca, tutte le boe, punti di virata/abbattuta.
+ // (La linea di partenza non è mostrata in Vista Campo, ma il riquadro la include se possibile: vedi extra.)
+ function collectCampoPoints(plan, includeStartLine) {
+ const pts = [];
+ const add = (lat, lon) => { if (Number.isFinite(lat) && Number.isFinite(lon)) pts.push({ lat, lon }); };
+ const val = id => { const el = document.getElementById(id); return el ? parseFloat(el.value) : NaN; };
+ marks.forEach(m => add(m.lat, m.lon));
+ add(val('latBoat'), val('lonBoat'));
+ if (plan && plan.viewMode === 'CAMPO') {
+ add(plan.startLat, plan.startLon);
+ add(plan.targetLat, plan.targetLon);
+ if (plan.needsSecondLeg) add(plan.interLat, plan.interLon);
  }
+ if (includeStartLine) {
+ add(val('latGiuria'), val('lonGiuria'));
+ add(val('latPin'), val('lonPin'));
+ }
+ return pts;
+ }
+
+ // Calcola il riquadro geografico che, mostrato a tutto plotter (W x H px), tiene tutti i punti con un margine
+ // di CAMPO_MARGIN_PX. Stessa formula di scala del viewport, quindi rapporto d'aspetto = quello del plotter.
+ function computeWindBoxForPlotter(pts, W, H) {
+ const lat0 = (Math.min(...pts.map(p => p.lat)) + Math.max(...pts.map(p => p.lat))) / 2;
+ const lon0 = (Math.min(...pts.map(p => p.lon)) + Math.max(...pts.map(p => p.lon))) / 2;
+ const cosLat = Math.cos(toRad(lat0));
+ const xs = pts.map(p => (p.lon - lon0) * cosLat * 60);
+ const ys = pts.map(p => (p.lat - lat0) * 60);
+ const spanX = Math.max(Math.max(...xs) - Math.min(...xs), CAMPO_MIN_SPAN_NM);
+ const spanY = Math.max(Math.max(...ys) - Math.min(...ys), CAMPO_MIN_SPAN_NM);
+ const scale = Math.min((W - 2 * CAMPO_MARGIN_PX) / spanX, (H - 2 * CAMPO_MARGIN_PX) / spanY);   // px per NM
+ const halfNS = (H / scale) / 2, halfEW = (W / scale) / 2;                                        // NM
+ return {
+ latMin: lat0 - halfNS / 60, latMax: lat0 + halfNS / 60,
+ lonMin: lon0 - halfEW / (60 * cosLat), lonMax: lon0 + halfEW / (60 * cosLat)
+ };
+ }
+
+ // Riquadro del vento = area del plotter in Vista Campo. Resta invariato finché barca, boe e punti di virata
+ // ci stanno e il plotter non cambia forma; le celle mantengono i loro valori.
+ function fitWindBoxToCourse(userTriggered) {
+ const plan = (typeof currentRoutePlan !== 'undefined') ? currentRoutePlan : null;
+ let pts = collectCampoPoints(plan, true);
+ if (pts.length === 0) return;
+ const { W, H } = getPlotterSize();
+ windGridBox = computeWindBoxForPlotter(pts, W, H);
+ updateMatrixBoxInfo();
+ if (userTriggered) {
  if (windMatrixActive) renderWindMatrixOverlay();
  updateLiveStatus();
+ requestRecalc(0);
+ }
  }
 
+ // Vista Campo: verifica che il riquadro copra esattamente il plotter e contenga barca, boe e punti di virata.
+ // Se non è così (finestra ridimensionata, barca o boa spostata fuori) lo ricalcola. Ritorna true se cambiato.
+ function ensureWindBoxFitsPlotter(plan) {
+ const { W, H } = getPlotterSize();
+ const b = windGridBox;
+ let refit = !b;
+ if (b) {
+ const cosLat = Math.cos(toRad((b.latMin + b.latMax) / 2));
+ const boxW = (b.lonMax - b.lonMin) * cosLat * 60, boxH = (b.latMax - b.latMin) * 60;
+ if (Math.abs((boxW / boxH) / (W / H) - 1) > 1e-3) refit = true;      // plotter di forma diversa
+ else {
+ const m = 10 / (W / boxW);                                        // 10 px in NM
+ const outside = collectCampoPoints(plan, false).some(p => {
+ const x = (p.lon - b.lonMin) * cosLat * 60, y = (p.lat - b.latMin) * 60;
+ return x < m || x > boxW - m || y < m || y > boxH - m;
+ });
+ if (outside) refit = true;
+ }
+ }
+ if (!refit || Date.now() - lastBoxAutoFitTs < 1500) return false;
+ const pts = collectCampoPoints(plan, true);
+ if (pts.length === 0) return false;
+ lastBoxAutoFitTs = Date.now();
+ windGridBox = computeWindBoxForPlotter(pts, W, H);
+ updateMatrixBoxInfo();
+ if (windMatrixActive) renderWindMatrixOverlay();
+ requestRecalc(0);                                                         // il campo di vento è cambiato geograficamente
+ return true;
+ }
+
+ function updateMatrixBoxInfo() {
+ const el = document.getElementById('matrixBoxInfo');
+ if (!el || !windGridBox) return;
+ const b = windGridBox;
+ const cosLat = Math.cos(toRad((b.latMin + b.latMax) / 2));
+ const ns = (b.latMax - b.latMin) * 60, ew = (b.lonMax - b.lonMin) * cosLat * 60;
+ const fuori = marks.filter(m => m.lat < b.latMin || m.lat > b.latMax || m.lon < b.lonMin || m.lon > b.lonMax).map(m => m.name);
+ let html = `Riquadro fisso: ${ew.toFixed(1)} × ${ns.toFixed(1)} NM (E-O × N-S), celle da ${(ew / matrixCols).toFixed(2)} × ${(ns / matrixRows).toFixed(2)} NM.`;
+ if (fuori.length) {
+ html += `<br><span style="color:var(--amber)">⚠️ Boa ${fuori.join(', ')} fuori dal riquadro: lì vale il vento del bordo. Usa “Adatta riquadro al campo”.</span>`;
+ }
+ el.innerHTML = html;
+ }
+
+ // Campionatore bilineare su coordinate normalizzate u (ovest→est) e v (nord→sud), entrambe in [0,1].
+ function makeGridSampler(S, Dg, rows, cols) {
+ let uniform = true;
+ for (let r = 0; r < rows && uniform; r++) {
+ for (let c = 0; c < cols; c++) {
+ if (Math.abs(S[r][c] - S[0][0]) > 1e-9 || angDiff(Dg[r][c], Dg[0][0]) > 1e-9) { uniform = false; break; }
+ }
+ }
+ if (uniform) {
+ const w = { tws: S[0][0], twd: normDeg(Dg[0][0]) };
+ return { uniform: true, sample: () => w };
+ }
+ const SX = Dg.map(r => r.map(d => Math.sin(toRad(d))));
+ const CX = Dg.map(r => r.map(d => Math.cos(toRad(d))));
+ return {
+ uniform: false,
+ sample(u, v) {
+ const fr = clampNum(v * rows - 0.5, 0, rows - 1);
+ const fc = clampNum(u * cols - 0.5, 0, cols - 1);
+ const r0 = Math.floor(fr), c0 = Math.floor(fc);
+ const r1 = Math.min(rows - 1, r0 + 1), c1 = Math.min(cols - 1, c0 + 1);
+ const wr = fr - r0, wc = fc - c0;
+ const w00 = (1 - wr) * (1 - wc), w01 = (1 - wr) * wc, w10 = wr * (1 - wc), w11 = wr * wc;
+ const tws = S[r0][c0] * w00 + S[r0][c1] * w01 + S[r1][c0] * w10 + S[r1][c1] * w11;
+ const sx = SX[r0][c0] * w00 + SX[r0][c1] * w01 + SX[r1][c0] * w10 + SX[r1][c1] * w11;
+ const cx = CX[r0][c0] * w00 + CX[r0][c1] * w01 + CX[r1][c0] * w10 + CX[r1][c1] * w11;
+ return { tws, twd: normDeg(toDeg(Math.atan2(sx, cx))) };
+ }
+ };
+ }
+
+ // Vento in un punto geografico. Snapshot immutabile: sicuro da usare in cicli di calcolo.
+ function makeWindField() {
+ const base = baseWindFromInputs();
+ const box = windGridBox;
+ if (!box || !gridsAreValid() || !(box.latMax > box.latMin) || !(box.lonMax > box.lonMin)) {
+ const w = { tws: base.tws, twd: base.twd };
+ return { uniform: true, at: () => w };
+ }
+ const sm = makeGridSampler(windMatrixGrid, windDirMatrixGrid, matrixRows, matrixCols);
+ if (sm.uniform) { const w = sm.sample(); return { uniform: true, at: () => w }; }
+ const dLat = box.latMax - box.latMin, dLon = box.lonMax - box.lonMin;
+ return { uniform: false, at: (lat, lon) => sm.sample((lon - box.lonMin) / dLon, (box.latMax - lat) / dLat) };
+ }
+
+ // Il vento base (TWD/TWS) SPOSTA il campo: le differenze tra le celle restano.
+ function updateGlobalWind() {
+ const b = baseWindFromInputs();
+ if (!baseWindRef) baseWindRef = { twd: b.twd, tws: b.tws };
+ const dTwd = signedDiff(b.twd, baseWindRef.twd);
+ const dTws = b.tws - baseWindRef.tws;
+
+ if ((Math.abs(dTwd) > 1e-9 || Math.abs(dTws) > 1e-9) && gridsAreValid()) {
+ for (let r = 0; r < matrixRows; r++) {
+ for (let c = 0; c < matrixCols; c++) {
+ windDirMatrixGrid[r][c] = normDeg(windDirMatrixGrid[r][c] + dTwd);
+ windMatrixGrid[r][c] = clampNum(parseFloat((windMatrixGrid[r][c] + dTws).toFixed(2)), 0, 60);
+ }
+ }
+ } else if (!gridsAreValid()) {
+ initWindMatrix();
+ }
+ baseWindRef = { twd: b.twd, tws: b.tws };
+
+ if (windMatrixActive) renderWindMatrixOverlay();
+ updateLiveStatus();
+ requestRecalc();
+ }
+
+ // Riporta tutte le celle al vento base (azzera le differenze inserite a mano).
+ function resetMatrixToBase() {
+ initWindMatrix();
+ if (windMatrixActive) renderWindMatrixOverlay();
+ updateLiveStatus();
+ requestRecalc(0);
+ }
+
+ // Cambio righe/colonne: il campo esistente viene ricampionato, non perso.
  function updateMatrixDimensions() {
  const rInput = parseInt(document.getElementById('matrixRowsInput').value);
  const cInput = parseInt(document.getElementById('matrixColsInput').value);
- 
- matrixRows = Math.max(1, Math.min(9, rInput || 3));
- matrixCols = Math.max(1, Math.min(9, cInput || 3));
- 
- document.getElementById('matrixRowsInput').value = matrixRows;
- document.getElementById('matrixColsInput').value = matrixCols;
- 
- const baseTws = parseFloat(document.getElementById('tws').value) || 10;
- const baseTwd = parseFloat(document.getElementById('twd').value) || 0;
- 
- let newGrid = [];
- let newDirGrid = [];
- 
- for (let r = 0; r < matrixRows; r++) {
- let row = [];
- let dirRow = [];
- for (let c = 0; c < matrixCols; c++) {
- if (windMatrixGrid[r] && windMatrixGrid[r][c] !== undefined) {
- row.push(windMatrixGrid[r][c]);
- dirRow.push(windDirMatrixGrid[r][c] !== undefined ? windDirMatrixGrid[r][c] : baseTwd);
- } else {
- row.push(baseTws);
- dirRow.push(baseTwd);
+ const newRows = Math.max(1, Math.min(9, rInput || 3));
+ const newCols = Math.max(1, Math.min(9, cInput || 3));
+ document.getElementById('matrixRowsInput').value = newRows;
+ document.getElementById('matrixColsInput').value = newCols;
+
+ const b = baseWindFromInputs();
+ const sm = gridsAreValid() ? makeGridSampler(windMatrixGrid, windDirMatrixGrid, matrixRows, matrixCols) : null;
+ const newS = [], newD = [];
+ for (let r = 0; r < newRows; r++) {
+ const rowS = [], rowD = [];
+ for (let c = 0; c < newCols; c++) {
+ const w = sm ? sm.sample((c + 0.5) / newCols, (r + 0.5) / newRows) : b;
+ rowS.push(Math.round(w.tws * 10) / 10);
+ rowD.push(Math.round(w.twd));
  }
+ newS.push(rowS);
+ newD.push(rowD);
  }
- newGrid.push(row);
- newDirGrid.push(dirRow);
- }
- windMatrixGrid = newGrid;
- windDirMatrixGrid = newDirGrid;
- 
- if (windMatrixActive) {
- renderWindMatrixOverlay();
- }
+ matrixRows = newRows;
+ matrixCols = newCols;
+ windMatrixGrid = newS;
+ windDirMatrixGrid = newD;
+
+ updateMatrixBoxInfo();
+ if (windMatrixActive) renderWindMatrixOverlay();
  updateLiveStatus();
+ requestRecalc();
  }
 
  function toggleWindMatrix() {
@@ -1017,7 +1306,7 @@
  if (windMatrixActive) {
  if (btnCard) btnCard.className = "btn btn-amber";
  if (btnHeader) btnHeader.className = "btn btn-amber";
- overlay.style.display = 'grid';
+ overlay.style.display = (currentViewMode === 'PARTENZA') ? 'none' : 'grid';   // in Vista Partenza la matrice non si mostra
  renderWindMatrixOverlay();
  } else {
  if (btnCard) btnCard.className = "btn btn-cyan";
@@ -1033,18 +1322,29 @@
  windMatrixGrid[r][c] = Math.max(0, Math.min(60, parseFloat((windMatrixGrid[r][c] + delta).toFixed(1))));
  renderWindMatrixOverlay();
  updateLiveStatus();
+ requestRecalc();
  }
  }
  
  function adjustCellWindDir(r, c, delta) {
  if (windDirMatrixGrid[r] && windDirMatrixGrid[r][c] !== undefined) {
- let newDir = windDirMatrixGrid[r][c] + delta;
- if (newDir >= 360) newDir -= 360;
- if (newDir < 0) newDir += 360;
- windDirMatrixGrid[r][c] = newDir;
+ windDirMatrixGrid[r][c] = normDeg(windDirMatrixGrid[r][c] + delta);
  renderWindMatrixOverlay();
  updateLiveStatus();
+ requestRecalc();
  }
+ }
+
+ // Programma un ricalcolo del piano (raggruppa più modifiche ravvicinate in un solo calcolo).
+ function requestRecalc(delay) {
+ if (recalcTimer) return;
+ const d = (delay === undefined) ? 150 : delay;
+ const wait = Math.max(d, RECALC_MIN_INTERVAL_MS - (Date.now() - lastRecalcTs));
+ recalcTimer = setTimeout(() => {
+ recalcTimer = null;
+ lastRecalcTs = Date.now();
+ if (!recalculateRoutePlan()) updateLiveStatus();
+ }, Math.max(0, wait));
  }
 
  function getCellColor(twsVal, baseTws, alpha = 0.4) {
@@ -1146,14 +1446,18 @@
  lon: parseFloat((lastMark.lon + 0.01).toFixed(4))
  });
  renderMarksUI();
+ updateMatrixBoxInfo();
  updateLiveStatus();
+ requestRecalc();
  }
 
  function removeMark(id) {
  if (marks.length <= 1) return;
  marks = marks.filter(m => m.id !== id);
  renderMarksUI();
+ updateMatrixBoxInfo();
  updateLiveStatus();
+ requestRecalc();
  }
 
  function updateMarkData(id, field, value) {
@@ -1161,7 +1465,9 @@
  if (mark) {
  mark[field] = value;
  if (field === 'name') renderMarksUI();
+ updateMatrixBoxInfo();
  updateLiveStatus();
+ requestRecalc();
  }
  }
 
@@ -1351,12 +1657,15 @@
  updateTimerUI();
 
  timerInterval = setInterval(() => {
+ if (timerState === 'COUNTDOWN') {
+ // pre-gara: conto alla rovescia; allo 0 scatta la partenza
  timerSeconds--;
- if (timerSeconds <= 0 && timerState === 'COUNTDOWN') {
+ if (timerSeconds <= 0) {
  timerState = 'RACING';
  timerSeconds = 0;
  }
- if (timerState === 'RACING') {
+ } else if (timerState === 'RACING') {
+ // gara: il tempo avanza
  timerSeconds++;
  }
  updateTimerUI();
@@ -1501,7 +1810,7 @@
  document.getElementById('valSOG').innerText = "SOG: 0.0 kn";
  }
 
- updateLiveStatus();
+ requestRecalc(300);
  }, err => {
  console.warn("Errore GPS: " + err.message);
  toggleGPS();
@@ -1548,7 +1857,7 @@
  allCalcBtns.forEach(b => {
  b.classList.add('btn-flash');
  const orig = b.innerHTML;
- b.innerHTML = '✓ BORDO OTTIMIZZATO!';
+ b.innerHTML = '✓ Ricalcolato';
  setTimeout(() => {
  b.classList.remove('btn-flash');
  b.innerHTML = orig;
@@ -1557,37 +1866,250 @@
  }
 
  // ======================================================================
- // PATHFINDING OPTIMIZER: NEW recalculateRoutePlan
+ // MODELLO DI PRESTAZIONI: POLARE STW(TWS, TWA)
+ // ======================================================================
+ // I valori inseriti (velocità/angoli target e scarroccio) valgono al TWS base. Per altre intensità
+ // di vento la forma viene ricavata dalla tabella del preset (6/10/14/18 kn) della stessa barca,
+ // riscalata in modo che al TWS base coincida esattamente con i valori inseriti.
+ // Tra bolina e poppa la curva passa per i punti target e per il traverso/lasco (fattori sotto,
+ // oppure velocità al traverso inserita a mano). L'angolo di VMG ottimale coincide per costruzione
+ // con il TWA target (pendenza vincolata nei punti target).
+ const MANEUVER_LOSS_SEC = { tack: 8, gybe: 12 };   // tempo perso in una virata / abbattuta (s)
+ const REACH_FACTOR_90 = 1.22;     // STW al traverso / STW di bolina (se non inserita)
+ const REACH_FACTOR_120 = 1.03;    // STW a 120° / STW a 90°
+ const MIN_LEG_NM = 0.03;          // sotto questa lunghezza un bordo non è un bordo reale
+ const LEG_SAMPLE_NM = 0.08;       // passo di integrazione del tempo lungo il bordo
+
+ const POLAR_TABLES = (() => {
+ const t = {};
+ Object.keys(presets).forEach(k => { const p = presets[k]; (t[p.name] = t[p.name] || []).push(p); });
+ Object.values(t).forEach(a => a.sort((x, y) => x.tws - y.tws));
+ return t;
+ })();
+
+ function getPolarFamily() {
+ const sel = document.getElementById('presetSelector');
+ const p = presets[sel ? sel.value : ''];
+ return (p && POLAR_TABLES[p.name]) ? p.name : Object.keys(POLAR_TABLES)[0];
+ }
+
+ function tableAt(family, tws) {
+ const a = POLAR_TABLES[family];
+ const keys = ['stwUp', 'twaUp', 'stwDown', 'twaDown', 'leeway'];
+ const pick = o => { const r = {}; keys.forEach(k => r[k] = o[k]); return r; };
+ const lo = a[0], hi = a[a.length - 1];
+ if (tws <= lo.tws) {
+ const k = Math.max(0.12, tws / lo.tws);
+ const r = pick(lo); r.stwUp *= k; r.stwDown *= k; return r;
+ }
+ if (tws >= hi.tws) return pick(hi);
+ let i = 0;
+ while (i < a.length - 2 && tws > a[i + 1].tws) i++;
+ const t = (tws - a[i].tws) / (a[i + 1].tws - a[i].tws);
+ const r = {};
+ keys.forEach(k => r[k] = a[i][k] + t * (a[i + 1][k] - a[i][k]));
+ return r;
+ }
+
+ // Curva STW(TWA) per un dato set di parametri: interpolazione cubica di Hermite tra nodi.
+ function buildPolarCurve(p) {
+ const rad = Math.PI / 180;
+ const up = p.twaUp, dn = p.twaDown;
+ const lwUp = Math.min(p.leeway, 88 - up);
+ const V90 = Math.max(p.stwReach || p.stwUp * REACH_FACTOR_90, p.stwUp * 1.05);
+
+ // Pendenza nei punti target: massimizza il VMG proprio in quel punto.
+ // Bolina: il progresso al vento è STW·cos(TWA_rotta) con TWA_rotta = TWA_prua + scarroccio.
+ const nodes = [
+ { x: up * 0.4, y: 0, m: 0 },
+ { x: up, y: p.stwUp, m: p.stwUp * Math.tan((up + lwUp) * rad) * rad }
+ ];
+ const mid = (up + 90) / 2;
+ if (mid - up > 4) nodes.push({ x: mid, y: Math.max(p.stwUp * 1.02, 0.955 * V90), m: null });
+ nodes.push({ x: 90, y: V90, m: null });
+ if (dn > 128) nodes.push({ x: 120, y: V90 * REACH_FACTOR_120, m: null });
+ // Poppa: prima del punto target la curva deve stare sotto la tangente VMG (V ≤ VMG*/|cos|),
+ // altrimenti il massimo VMG cadrebbe prima dell'angolo target.
+ const vmgD = p.stwDown * Math.abs(Math.cos(dn * rad));
+ [[25, 0.96], [10, 0.975]].forEach(([back, f]) => {
+ const th = dn - back, prev = nodes[nodes.length - 1];
+ if (th > prev.x + 5) {
+ const y = Math.min(f * vmgD / Math.abs(Math.cos(th * rad)), prev.y * 0.995);
+ if (y > p.stwDown * 1.002) nodes.push({ x: th, y, m: null, tangent: true });
+ }
+ });
+ nodes.push({ x: dn, y: p.stwDown, m: p.stwDown * Math.tan(dn * rad) * rad });
+ if (dn < 176) nodes.push({ x: 180, y: 0.97 * p.stwDown * Math.abs(Math.cos(dn * rad)), m: 0 });
+
+ for (let i = 0; i < nodes.length; i++) {
+ if (nodes[i].m !== null) continue;
+ const a = nodes[i - 1], b = nodes[i], c = nodes[i + 1];
+ const h0 = b.x - a.x, h1 = c.x - b.x;
+ const s0 = (b.y - a.y) / h0, s1 = (c.y - b.y) / h1;
+ if (b.tangent) b.m = s1;                     // nodi di tangente: raccordo quasi lineare verso il punto target
+ else if (s0 * s1 <= 0) b.m = 0;
+ else { const w1 = 2 * h1 + h0, w2 = h1 + 2 * h0; b.m = (w1 + w2) / (w1 / s0 + w2 / s1); }
+ }
+
+ const last = nodes[nodes.length - 1];
+ return function (twa) {
+ if (twa <= nodes[0].x) return 0;
+ if (twa >= last.x) return last.y;
+ let i = 0;
+ while (i < nodes.length - 2 && twa > nodes[i + 1].x) i++;
+ const a = nodes[i], b = nodes[i + 1];
+ const h = b.x - a.x, t = (twa - a.x) / h, t2 = t * t, t3 = t2 * t;
+ return (2 * t3 - 3 * t2 + 1) * a.y + (t3 - 2 * t2 + t) * h * a.m +
+ (-2 * t3 + 3 * t2) * b.y + (t3 - t2) * h * b.m;
+ };
+ }
+
+ function makePolarModel() {
+ const num = (id, d) => { const el = document.getElementById(id); const v = el ? parseFloat(el.value) : NaN; return Number.isFinite(v) ? v : d; };
+ const reachEl = document.getElementById('targetSTWReach');
+ const reachV = reachEl ? parseFloat(reachEl.value) : NaN;
+ const ref = {
+ tws: num('tws', 10),
+ stwUp: num('targetSTW', 5.0), twaUp: num('targetTWA', 44),
+ stwDown: num('targetSTWDown', 4.8), twaDown: num('targetTWADown', 165),
+ leeway: num('leeway', 6),
+ stwReach: (Number.isFinite(reachV) && reachV > 0) ? reachV : null
+ };
+ if (ref.stwUp <= 0 || ref.stwDown <= 0) return null;
+
+ const fam = getPolarFamily();
+ const tRef = tableAt(fam, ref.tws);
+ const ratio = (a, b) => (b > 0 ? a / b : 1);
+ const cache = new Map();
+
+ function entryAt(tws) {
+ const key = Math.round(clampNum(tws, 0, 60) * 4);
+ let e = cache.get(key);
+ if (!e) {
+ const tl = tableAt(fam, key / 4);
+ const kUp = ratio(tl.stwUp, tRef.stwUp);
+ const p = {
+ stwUp: Math.max(0.4, ref.stwUp * kUp),
+ twaUp: clampNum(ref.twaUp + (tl.twaUp - tRef.twaUp), 28, 70),
+ stwDown: Math.max(0.4, ref.stwDown * ratio(tl.stwDown, tRef.stwDown)),
+ twaDown: clampNum(ref.twaDown + (tl.twaDown - tRef.twaDown), 120, 178),
+ leeway: clampNum(ref.leeway + (tl.leeway - tRef.leeway), 0, 15),
+ stwReach: ref.stwReach ? Math.max(0.4, ref.stwReach * kUp) : null
+ };
+ e = { p, curve: buildPolarCurve(p), plateauEnd: Math.min(80, p.twaUp + p.leeway + 10) };
+ cache.set(key, e);
+ }
+ return e;
+ }
+ return { ref, entryAt, speed: (tws, twa) => entryAt(tws).curve(twa) };
+ }
+
+ // Stato della barca su una rotta (rotta sul fondo = trk) con il vento locale w.
+ // Vento da dritta => mure a dritta => la prua è ORZATA rispetto alla rotta di "scarroccio".
+ function trackState(trk, w, model) {
+ const e = model.entryAt(w.tws);
+ const rel = signedDiff(w.twd, trk);          // > 0: il vento arriva da dritta
+ const side = rel >= 0 ? 1 : -1;              // +1 mure a dritta, -1 mure a sinistra
+ const twaT = Math.abs(rel);                  // angolo al vento della ROTTA
+ const g = twaT <= e.plateauEnd ? 1 : Math.max(0, (90 - twaT) / (90 - e.plateauEnd));
+ const lw = e.p.leeway * g;                   // lo scarroccio svanisce con le andature portanti
+ const twaH = Math.max(0, twaT - lw);         // angolo al vento della PRUA
+ return { stw: e.curve(twaH), hdg: normDeg(trk + side * lw), lw, side, twaH, twaT };
+ }
+
+ // Tempo per percorrere pA→pB (coordinate NM locali) integrando vento e polare passo a passo.
+ function integrateLeg(pA, pB, ctx) {
+ const dx = pB.x - pA.x, dy = pB.y - pA.y;
+ const dist = Math.hypot(dx, dy);
+ const trk = normDeg(toDeg(Math.atan2(dx, dy)));
+ if (dist < 1e-6) {
+ const w0 = ctx.wind(pA);
+ return { time: 0, dist: 0, trk, avgTws: w0.tws, avgStw: 0 };
+ }
+ const n = Math.max(4, Math.ceil(dist / LEG_SAMPLE_NM));
+ const ds = dist / n;
+ let time = 0, sumTws = 0;
+ for (let i = 0; i < n; i++) {
+ const f = (i + 0.5) / n;
+ const w = ctx.wind({ x: pA.x + f * dx, y: pA.y + f * dy });
+ sumTws += w.tws;
+ time += ds / Math.max(0.25, trackState(trk, w, ctx.model).stw);
+ }
+ return { time, dist, trk, avgTws: sumTws / n, avgStw: dist / time };
+ }
+
+ function meanWind(list) {
+ let s = 0, c = 0, t = 0;
+ list.forEach(w => { s += Math.sin(toRad(w.twd)); c += Math.cos(toRad(w.twd)); t += w.tws; });
+ return { twd: normDeg(toDeg(Math.atan2(s, c))), tws: t / list.length };
+ }
+
+ // M = d·uA + e·uB, con uA, uB versori delle due rotte. Il punto di virata è d·uA.
+ function solveTwoLeg(M, brgA, brgB) {
+ const uA = { x: Math.sin(toRad(brgA)), y: Math.cos(toRad(brgA)) };
+ const uB = { x: Math.sin(toRad(brgB)), y: Math.cos(toRad(brgB)) };
+ const det = uA.x * uB.y - uA.y * uB.x;
+ if (Math.abs(det) < 1e-3) return null;
+ const d = (M.x * uB.y - M.y * uB.x) / det;
+ const e = (uA.x * M.y - uA.y * M.x) / det;
+ return { d, e, I: { x: d * uA.x, y: d * uA.y } };
+ }
+
+ // Punto di virata/abbattuta ottimo: parte dalla layline esatta e la raffina con una
+ // ricerca multi-risoluzione (griglia che si restringe attorno al miglior punto).
+ // Con vento uniforme la layline è già la soluzione esatta e la ricerca viene saltata.
+ function optimizeIntersection(seed, D, ctx, penaltyH, uniform) {
+ const O = { x: 0, y: 0 };
+ const evalI = I => {
+ const l1 = integrateLeg(O, I, ctx), l2 = integrateLeg(I, ctx.M, ctx);
+ return { I, l1, l2, time: l1.time + l2.time + penaltyH };
+ };
+ let best = evalI(seed);
+ if (uniform) return best;
+
+ let radius = Math.max(0.15, 0.35 * D);
+ for (const n of [9, 4, 4, 4, 4, 4]) {
+ const step = radius / n;
+ const c = best.I;
+ let improved = best;
+ for (let i = -n; i <= n; i++) {
+ for (let j = -n; j <= n; j++) {
+ if (i === 0 && j === 0) continue;
+ const cand = evalI({ x: c.x + i * step, y: c.y + j * step });
+ if (cand.time < improved.time - 1e-9) improved = cand;
+ }
+ }
+ best = improved;
+ radius = step * 1.6;
+ }
+ return best;
+ }
+
+ // ======================================================================
+ // PIANO DI ROTTA
  // ======================================================================
  function recalculateRoutePlan() {
- let latBoat = parseFloat(document.getElementById('latBoat').value);
- let lonBoat = parseFloat(document.getElementById('lonBoat').value);
- 
+ const num = id => parseFloat(document.getElementById(id).value);
+ const latBoat = num('latBoat'), lonBoat = num('lonBoat');
+
  const targetMarkId = document.getElementById('targetMarkSelect') ? document.getElementById('targetMarkSelect').value : null;
  const targetMarkObj = marks.find(m => m.id === targetMarkId);
- 
  if (!targetMarkObj) return false;
 
- const latTarget = targetMarkObj.lat;
- const lonTarget = targetMarkObj.lon;
+ const latTarget = targetMarkObj.lat, lonTarget = targetMarkObj.lon;
+ if (!Number.isFinite(latTarget) || !Number.isFinite(lonTarget)) return false;
 
- const twdGlobal = parseFloat(document.getElementById('twd').value) % 360;
- const twsGlobal = parseFloat(document.getElementById('tws').value);
- const stwUp = parseFloat(document.getElementById('targetSTW').value);
- const stwDown = parseFloat(document.getElementById('targetSTWDown').value);
- const twaUp = parseFloat(document.getElementById('targetTWA').value);
- const twaDownInput = parseFloat(document.getElementById('targetTWADown').value);
- const leeway = parseFloat(document.getElementById('leeway').value);
+ const model = makePolarModel();
+ if (!model) return false;
+ const wf = makeWindField();
  const isPartenza = (currentViewMode === 'PARTENZA');
 
  let calcLat, calcLon;
  if (isPartenza) {
- const latGiuria = parseFloat(document.getElementById('latGiuria').value);
- const lonGiuria = parseFloat(document.getElementById('lonGiuria').value);
- const latPin = parseFloat(document.getElementById('latPin').value);
- const lonPin = parseFloat(document.getElementById('lonPin').value);
-
- const ideal = getIdealStartPoint(latGiuria, lonGiuria, latPin, lonPin, twdGlobal);
+ const latG = num('latGiuria'), lonG = num('lonGiuria'), latP = num('latPin'), lonP = num('lonPin');
+ if (![latG, lonG, latP, lonP].every(Number.isFinite)) return false;
+ const wLine = wf.at((latG + latP) / 2, (lonG + lonP) / 2);
+ const ideal = getIdealStartPoint(latG, lonG, latP, lonP, wLine.twd);
  if (!ideal) return false;
  calcLat = ideal.lat;
  calcLon = ideal.lon;
@@ -1600,215 +2122,73 @@
  const distDirect = haversine(calcLat, calcLon, latTarget, lonTarget);
  const brgTarget = bearing(calcLat, calcLon, latTarget, lonTarget);
 
- let angleToMarkFromWind = (brgTarget - twdGlobal + 360) % 360;
- if (angleToMarkFromWind > 180) angleToMarkFromWind = 360 - angleToMarkFromWind;
+ // Piano locale in NM centrato sul punto di partenza del calcolo (x = est, y = nord)
+ const cosLat = Math.cos(toRad(calcLat));
+ const O = { x: 0, y: 0 };
+ const M = { x: (lonTarget - calcLon) * cosLat * 60, y: (latTarget - calcLat) * 60 };
+ const D = Math.hypot(M.x, M.y);
+ const windAtNM = p => wf.at(calcLat + p.y / 60, calcLon + p.x / (60 * cosLat));
+ const ctx = { wind: windAtNM, model, M };
 
- const isUpwind = angleToMarkFromWind <= 90;
- let stwBase = isUpwind ? stwUp : stwDown;
- let twaEff = isUpwind ? twaUp : twaDownInput;
+ // Vento medio lungo il tratto: serve per costruire le layline di partenza
+ const wStart = windAtNM(O);
+ const wMean = meanWind([wStart, windAtNM({ x: M.x / 2, y: M.y / 2 }), windAtNM(M)]);
+ const coneUp = angDiff(brgTarget, wMean.twd) < 90;
+ const pMean = model.entryAt(wMean.tws).p;
+ const twaOpt = coneUp ? pMean.twaUp : pMean.twaDown;
+ const lwOpt = coneUp ? Math.min(pMean.leeway, 88 - pMean.twaUp) : 0;
+ // rotta sul fondo alla layline: prua a TWA target, poi scarroccio verso sottovento
+ const trkS = normDeg(wMean.twd - (twaOpt + lwOpt));   // mure a dritta
+ const trkP = normDeg(wMean.twd + (twaOpt + lwOpt));   // mure a sinistra
+ const penaltyH = (coneUp ? MANEUVER_LOSS_SEC.tack : MANEUVER_LOSS_SEC.gybe) / 3600;
 
- // 1. Calculate Base Geometric Laylines (fallback / starting point for optimizer)
- let headingSTB, trackSTB, headingPORT, trackPORT;
- if (isUpwind) {
- trackSTB = (twdGlobal + twaEff + leeway) % 360;
- trackPORT = (twdGlobal - twaEff - leeway + 360) % 360;
+ // 1) rotta diretta   2) due bordi, prima mure a dritta / prima mure a sinistra
+ const direct = integrateLeg(O, M, ctx);
+ const seeds = { STB: solveTwoLeg(M, trkS, trkP), PORT: solveTwoLeg(M, trkP, trkS) };
+ const cands = [];
+ ['STB', 'PORT'].forEach(tack => {
+ const s = seeds[tack];
+ if (!s || s.d < MIN_LEG_NM || s.e < MIN_LEG_NM) return;   // boa fuori dal cono: nessuna virata utile
+ const opt = optimizeIntersection(s.I, D, ctx, penaltyH, wf.uniform);
+ if (opt.l1.dist < MIN_LEG_NM || opt.l2.dist < MIN_LEG_NM) return;
+ cands.push({ tack, ...opt });
+ });
+
+ let best2 = null;
+ if (cands.length) {
+ best2 = cands.reduce((a, b) => (b.time < a.time ? b : a));
+ // A parità di tempo (entro 5 s o 0,5%) si evita di cambiare mura: si tiene quella già consigliata
+ // (isteresi, evita ribaltamenti da rumore GPS), altrimenti quella su cui la barca sta già navigando.
+ const prev = currentRoutePlan;
+ const samePlan = prev && prev.targetMarkId === targetMarkObj.id && prev.viewMode === currentViewMode;
+ const hdgIn = num('hdgBoat');
+ const curSide = Number.isFinite(hdgIn) ? (signedDiff(wStart.twd, hdgIn) >= 0 ? 'STB' : 'PORT') : null;
+ const preferred = samePlan ? prev.favoredTack : curSide;
+ const tie = Math.max(5 / 3600, 0.005 * best2.time);
+ const keep = cands.find(c => c.tack === preferred);
+ if (keep && keep.time <= best2.time + tie) best2 = keep;
+ }
+ const needsSecondLeg = !!best2 && best2.time < direct.time;
+
+ let leg1, totalRoutingTime, latInter, lonInter;
+ if (needsSecondLeg) {
+ leg1 = best2.l1;
+ totalRoutingTime = best2.time;
+ latInter = calcLat + best2.I.y / 60;
+ lonInter = calcLon + best2.I.x / (60 * cosLat);
  } else {
- trackSTB = (twdGlobal + twaEff - leeway + 360) % 360;
- trackPORT = (twdGlobal - twaEff + leeway + 360) % 360;
- }
-
- let xM = (lonTarget - calcLon) * Math.cos(toRad(calcLat)) * 60;
- let yM = (latTarget - calcLat) * 60;
-
- const radSTB = toRad(90 - trackSTB);
- const radPORT = toRad(90 - trackPORT);
- const uSTB = { x: Math.cos(radSTB), y: Math.sin(radSTB) };
- const uPORT = { x: Math.cos(radPORT), y: Math.sin(radPORT) };
-
- const pStartNM = { x: 0, y: 0 };
- const pTargetNM = { x: xM, y: yM };
-
- // Base intersect: STB then PORT
- const det1 = uSTB.x * uPORT.y - uSTB.y * uPORT.x;
- let dSTB1 = 0;
- if (Math.abs(det1) > 0.001) dSTB1 = (xM * uPORT.y - yM * uPORT.x) / det1;
- const baseInterSTB_NM = { x: dSTB1 * uSTB.x, y: dSTB1 * uSTB.y };
-
- // Base intersect: PORT then STB
- const det2 = uPORT.x * uSTB.y - uPORT.y * uSTB.x;
- let dPORT1 = 0;
- if (Math.abs(det2) > 0.001) dPORT1 = (xM * uSTB.y - yM * uSTB.x) / det2;
- const baseInterPORT_NM = { x: dPORT1 * uPORT.x, y: dPORT1 * uPORT.y };
-
- // 2. Setup Viewport required for Matrix mapping
- const canvas = document.getElementById('tacticalCanvas');
- const width = (canvas && canvas.parentElement) ? canvas.parentElement.clientWidth : 800;
- const height = (canvas && canvas.parentElement) ? canvas.parentElement.clientHeight : 480;
-
- let allPoints = [pStartNM, pTargetNM, baseInterSTB_NM, baseInterPORT_NM];
- if (Number.isFinite(latBoat) && Number.isFinite(lonBoat)) {
- allPoints.push({
- x: (lonBoat - calcLon) * Math.cos(toRad(calcLat)) * 60,
- y: (latBoat - calcLat) * 60
- });
- }
- marks.forEach(m => {
- allPoints.push({
- x: (m.lon - calcLon) * Math.cos(toRad(calcLat)) * 60,
- y: (m.lat - calcLat) * 60
- });
- });
-
- const vp = makeViewport(allPoints, width, height, 60, 0.08);
-
- // 3. Wind Sampler mapped to Matrix Cells
- function getWindAt(pNM) {
- const cp = vp.toCanvas(pNM);
- let col = Math.floor(cp.x / (width / matrixCols));
- let row = Math.floor(cp.y / (height / matrixRows));
- col = Math.max(0, Math.min(matrixCols - 1, col));
- row = Math.max(0, Math.min(matrixRows - 1, row));
- const tws = (windMatrixGrid && windMatrixGrid[row] && windMatrixGrid[row][col] !== undefined) ? windMatrixGrid[row][col] : twsGlobal;
- const twd = (windDirMatrixGrid && windDirMatrixGrid[row] && windDirMatrixGrid[row][col] !== undefined) ? windDirMatrixGrid[row][col] : twdGlobal;
- return { tws, twd };
- }
-
- // 4. Segment Time Evaluator (Integrates local wind speed & direction)
- function calcSegmentTime(pA, pB) {
- const dist = Math.hypot(pB.x - pA.x, pB.y - pA.y);
- if (dist <= 0.0001) return { time: 0, avgStw: stwBase, avgTws: twsGlobal, dist: 0 };
- 
- const steps = Math.max(5, Math.ceil(dist * 20)); // Step analysis every ~0.05 NM
- let totalTime = 0, sumTws = 0, sumStw = 0;
- const segBrg = (toDeg(Math.atan2(pB.x - pA.x, pB.y - pA.y)) + 360) % 360;
-
- for (let i = 0; i < steps; i++) {
- const pt = {
- x: pA.x + ((i + 0.5) / steps) * (pB.x - pA.x),
- y: pA.y + ((i + 0.5) / steps) * (pB.y - pA.y)
- };
- const wind = getWindAt(pt);
- sumTws += wind.tws;
-
- // True Wind Angle vs SegBrg
- let twa = Math.abs((segBrg - wind.twd + 540) % 360 - 180);
- if (twa > 180) twa = 360 - twa;
-
- // Performance modifiers
- let f_wind = (twsGlobal > 0 && wind.tws > 0) ? Math.sqrt(wind.tws / twsGlobal) : 1.0;
- f_wind = Math.max(0.5, Math.min(2.0, f_wind));
-
- let angleDiff = Math.abs(twa - twaEff);
- let f_angle = Math.max(0.1, 1.0 - 0.0008 * angleDiff * angleDiff);
-
- // Heavy penalty for pinching upwind
- if (isUpwind && twa < 30) f_angle = 0.05;
-
- let stw = Math.max(0.1, stwBase * f_wind * f_angle);
- sumStw += stw;
- totalTime += (dist / steps) / stw;
- }
- return { time: totalTime, avgStw: sumStw / steps, avgTws: sumTws / steps, dist: dist };
- }
-
- // 5. The Optimizer (Grid Search)
- function optimizeIntersection(baseInterNM) {
- let bestInter = baseInterNM;
- let bestTime = Infinity;
- let bestStats = null;
- 
- // Define search area around the geometric layline
- const searchRadius = Math.max(0.1, Math.hypot(xM, yM) * 0.25);
- const gridSteps = 9; 
- const stepSize = (searchRadius * 2) / gridSteps;
-
- for(let dx = -searchRadius; dx <= searchRadius; dx += stepSize) {
- for(let dy = -searchRadius; dy <= searchRadius; dy += stepSize) {
- const testP = { x: baseInterNM.x + dx, y: baseInterNM.y + dy };
- const leg1 = calcSegmentTime(pStartNM, testP);
- const leg2 = calcSegmentTime(testP, pTargetNM);
- const totalTime = leg1.time + leg2.time;
- 
- if (totalTime < bestTime) {
- bestTime = totalTime;
- bestInter = testP;
- bestStats = { leg1, leg2 };
- }
- }
- }
- return { inter: bestInter, time: bestTime, stats: bestStats };
- }
-
- // 6. Evaluate all routing possibilities
- const directStats = calcSegmentTime(pStartNM, pTargetNM);
- const optSTB = optimizeIntersection(baseInterSTB_NM);
- const optPORT = optimizeIntersection(baseInterPORT_NM);
-
- let isOnLayline = isUpwind ? (angleToMarkFromWind >= (twaUp - 5.0)) : (angleToMarkFromWind <= (twaDownInput + 5.0));
- let needsSecondLeg = !isOnLayline;
- 
- if (directStats.time < optSTB.time && directStats.time < optPORT.time) {
- needsSecondLeg = false;
- }
-
- let favoredTack = "STB";
- let tackLabel = "";
- let hdgNext = 0;
- let distNext = 0;
- let latInter = 0, lonInter = 0;
- let stwEff = stwBase;
- let localTwsEff = twsGlobal;
- let totalRoutingTime = 0;
-
- if (!needsSecondLeg) {
- stwEff = directStats.avgStw;
- localTwsEff = directStats.avgTws;
- totalRoutingTime = directStats.time;
- 
- let diffWindTarget = (twdGlobal - brgTarget + 360) % 360;
- if (diffWindTarget > 0 && diffWindTarget < 180) {
- hdgNext = (brgTarget + leeway + 360) % 360;
- } else if (diffWindTarget > 180) {
- hdgNext = (brgTarget - leeway + 360) % 360;
- } else {
- hdgNext = brgTarget;
- }
- distNext = directStats.dist;
+ leg1 = direct;
+ totalRoutingTime = direct.time;
  latInter = latTarget;
  lonInter = lonTarget;
- 
- let angleRel = (brgTarget - twdGlobal + 360) % 360;
- favoredTack = (angleRel < 180) ? "STB" : "PORT";
- tackLabel = (favoredTack === "STB") ? "MURE A DRITTA (ROTTA DIRETTA)" : "MURE A SINISTRA (ROTTA DIRETTA)";
-
- } else if (optPORT.time < optSTB.time) {
- favoredTack = "PORT";
- distNext = optPORT.stats.leg1.dist;
- latInter = calcLat + (optPORT.inter.y / 60);
- lonInter = calcLon + (optPORT.inter.x / (60 * Math.cos(toRad(calcLat))));
- tackLabel = "MURE A SINISTRA (PORT)";
- stwEff = optPORT.stats.leg1.avgStw;
- localTwsEff = optPORT.stats.leg1.avgTws;
- totalRoutingTime = optPORT.time;
- 
- let trackOut = (toDeg(Math.atan2(optPORT.inter.x, optPORT.inter.y)) + 360) % 360;
- let diffWind = (twdGlobal - trackOut + 360) % 360;
- hdgNext = (diffWind > 180) ? (trackOut - leeway + 360) % 360 : (trackOut + leeway + 360) % 360;
-
- } else {
- favoredTack = "STB";
- distNext = optSTB.stats.leg1.dist;
- latInter = calcLat + (optSTB.inter.y / 60);
- lonInter = calcLon + (optSTB.inter.x / (60 * Math.cos(toRad(calcLat))));
- tackLabel = "MURE A DRITTA (STARBOARD)";
- stwEff = optSTB.stats.leg1.avgStw;
- localTwsEff = optSTB.stats.leg1.avgTws;
- totalRoutingTime = optSTB.time;
-
- let trackOut = (toDeg(Math.atan2(optSTB.inter.x, optSTB.inter.y)) + 360) % 360;
- let diffWind = (twdGlobal - trackOut + 360) % 360;
- hdgNext = (diffWind > 0 && diffWind < 180) ? (trackOut + leeway + 360) % 360 : (trackOut - leeway + 360) % 360;
  }
+
+ // Prua del primo bordo: rotta sul fondo + scarroccio con il vento locale di partenza
+ const st0 = trackState(leg1.trk, wStart, model);
+ const favoredTack = st0.side > 0 ? 'STB' : 'PORT';
+ let tackLabel;
+ if (needsSecondLeg) tackLabel = (st0.side > 0) ? "MURE A DRITTA (STARBOARD)" : "MURE A SINISTRA (PORT)";
+ else tackLabel = (st0.side > 0) ? "MURE A DRITTA (ROTTA DIRETTA)" : "MURE A SINISTRA (ROTTA DIRETTA)";
 
  currentRoutePlan = {
  viewMode: currentViewMode,
@@ -1820,18 +2200,21 @@
  interLon: lonInter,
  targetMark: targetMarkObj.name,
  targetMarkId: targetMarkObj.id,
- hdgNext: hdgNext,
- distNext: distNext,
- stwEff: stwEff,
+ hdgNext: st0.hdg,
+ distNext: leg1.dist,
+ stwEff: leg1.avgStw,
  needsSecondLeg: needsSecondLeg,
- isUpwind: isUpwind,
+ isUpwind: st0.twaH < 90,
  favoredTack: favoredTack,
+ tackSide: st0.side,
  tackLabel: tackLabel,
- twd: twdGlobal,
- tws: localTwsEff,
+ twd: wStart.twd,
+ tws: leg1.avgTws,
  distDirect: distDirect,
- leeway: leeway,
- totalRoutingTime: totalRoutingTime // new param!
+ leeway: model.ref.leeway,
+ leewayEff: st0.lw,
+ hdgTwa: st0.twaH,
+ totalRoutingTime: totalRoutingTime
  };
 
  updateLiveStatus();
@@ -1909,7 +2292,8 @@
  const heroLineBiasEl = document.getElementById('heroLineBiasText');
 
  if (lineValid) {
- const lineAnalysis = getStartLineAnalysis(curLat, curLon, latGiuria, lonGiuria, latPin, lonPin, plan.twd, stwVal, hdgBoatInput);
+ const lineWind = makeWindField().at((latGiuria + latPin) / 2, (lonGiuria + lonPin) / 2);
+ const lineAnalysis = getStartLineAnalysis(curLat, curLon, latGiuria, lonGiuria, latPin, lonPin, lineWind.twd, stwVal, hdgBoatInput);
  lineCtx = { latGiuria, lonGiuria, latPin, lonPin, analysis: lineAnalysis };
 
  let ocsText = lineAnalysis.isOCS ? " [⚠️ OCS / OLTRE LINEA!]" : "";
@@ -1939,18 +2323,15 @@
  let distToCurTarget = haversine(curLat, curLon, curTargetLat, curTargetLon);
  let brgToCurTarget = bearing(curLat, curLon, curTargetLat, curTargetLon);
 
- const twd = plan.twd;
- const leewayVal = plan.leeway;
-
- let diffWind = (twd - brgToCurTarget + 360) % 360;
+ const leewayVal = Math.round((plan.leewayEff !== undefined ? plan.leewayEff : plan.leeway) * 10) / 10;
 
  let leewayCorrectionText = "";
- if (diffWind > 0 && diffWind < 180) {
+ if (leewayVal < 0.5) {
+ leewayCorrectionText = `Scarroccio trascurabile su questa andatura (prua = rotta)`;
+ } else if (plan.tackSide > 0) {
  leewayCorrectionText = `Mure a Dritta: +${leewayVal}° orza per deriva a SX`;
- } else if (diffWind > 180) {
- leewayCorrectionText = `Mure a Sinistra: -${leewayVal}° orza per deriva a DX`;
  } else {
- leewayCorrectionText = `0° Scarroccio (In fil di ruota / Prua al vento)`;
+ leewayCorrectionText = `Mure a Sinistra: -${leewayVal}° orza per deriva a DX`;
  }
 
  const roundedHdgWithLeeway = Math.round(plan.hdgNext);
@@ -2104,6 +2485,20 @@
  return { scale, toCanvas: (p) => ({ x: cx + p.x * scale, y: cy - p.y * scale }) };
  }
 
+ // Viewport di Vista Campo: il riquadro del vento occupa TUTTO il plotter (W x H).
+ // Il riquadro ha già il rapporto d'aspetto del plotter, quindi la scala è la stessa sui due assi.
+ function makeBoxViewport(box, width, height, toNM) {
+ const nw = toNM(box.latMax, box.lonMin), se = toNM(box.latMin, box.lonMax);
+ const spanX = se.x - nw.x, spanY = nw.y - se.y;
+ let sx = width / spanX, sy = height / spanY;
+ if (Math.abs(sx / sy - 1) > 1e-3) sx = sy = Math.min(sx, sy);   // fallback: mai deformare
+ const cx = (nw.x + se.x) / 2, cy = (nw.y + se.y) / 2;
+ return {
+ scale: Math.min(sx, sy),
+ toCanvas: (p) => ({ x: width / 2 + (p.x - cx) * sx, y: height / 2 - (p.y - cy) * sy })
+ };
+ }
+
  function clipSegmentToRect(a, b, r) {
  const dx = b.x - a.x, dy = b.y - a.y;
  const p = [-dx, dx, -dy, dy];
@@ -2176,49 +2571,55 @@
  ctx.stroke();
  }
  
- function drawWindMatrixArrows(ctx, canvasWidth, canvasHeight) {
- if (!windDirMatrixGrid || windDirMatrixGrid.length === 0) return;
+ // Posiziona l'overlay di modifica esattamente sul riquadro geografico della matrice.
+ function positionWindOverlay(vp, toNM) {
+ const overlay = document.getElementById('windMatrixOverlay');
+ if (!overlay || !windGridBox) return;
+ const a = vp.toCanvas(toNM(windGridBox.latMax, windGridBox.lonMin));   // angolo NO
+ const b = vp.toCanvas(toNM(windGridBox.latMin, windGridBox.lonMax));   // angolo SE
+ overlay.style.left = a.x + 'px';
+ overlay.style.top = a.y + 'px';
+ overlay.style.width = Math.max(40, b.x - a.x) + 'px';
+ overlay.style.height = Math.max(40, b.y - a.y) + 'px';
+ }
 
- const cellW = canvasWidth / matrixCols;
- const cellH = canvasHeight / matrixRows;
- const baseTws = parseFloat(document.getElementById('tws').value) || 10;
+ // Celle e frecce del vento disegnate alle loro coordinate geografiche (stessa proiezione del resto del plotter).
+ function drawWindMatrixArrows(ctx, vp, toNM) {
+ if (!windGridBox || !gridsAreValid()) return;
+ const b = windGridBox, rows = matrixRows, cols = matrixCols;
+ const baseTws = baseWindFromInputs().tws;
+ const cellPt = (r, c) => vp.toCanvas(toNM(
+ b.latMax - (r / rows) * (b.latMax - b.latMin),
+ b.lonMin + (c / cols) * (b.lonMax - b.lonMin)));
 
- for (let r = 0; r < matrixRows; r++) {
- for (let c = 0; c < matrixCols; c++) {
- const twd = windDirMatrixGrid[r][c] || 0;
- const tws = windMatrixGrid[r][c] || baseTws;
+ for (let r = 0; r < rows; r++) {
+ for (let c = 0; c < cols; c++) {
+ const twd = windDirMatrixGrid[r][c];
+ const tws = windMatrixGrid[r][c];
  const diff = tws - baseTws;
 
- const x = c * cellW;
- const y = r * cellH;
- const cx = x + (cellW / 2);
- const cy = y + (cellH / 2);
+ const p0 = cellPt(r, c), p1 = cellPt(r + 1, c + 1);
+ const x = p0.x, y = p0.y, w = p1.x - p0.x, h = p1.y - p0.y;
+ const cx = x + w / 2, cy = y + h / 2;
 
  ctx.save();
  if (Math.abs(diff) >= 0.1) {
- const alpha = Math.min(0.6, 0.1 + (Math.abs(diff) / 15.0)); 
-
- if (diff > 0) {
- ctx.fillStyle = `rgba(16, 185, 129, ${alpha})`;
- } else {
- ctx.fillStyle = `rgba(168, 85, 247, ${alpha})`;
+ const alpha = Math.min(0.6, 0.1 + (Math.abs(diff) / 15.0));
+ ctx.fillStyle = diff > 0 ? `rgba(16, 185, 129, ${alpha})` : `rgba(168, 85, 247, ${alpha})`;
+ ctx.fillRect(x, y, w, h);
  }
- ctx.fillRect(x, y, cellW, cellH);
- }
- 
- ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+ ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
  ctx.lineWidth = 1;
- ctx.strokeRect(x, y, cellW, cellH);
+ ctx.strokeRect(x, y, w, h);
  ctx.restore();
 
+ const s = clampNum(Math.min(w, h) / 44, 0.35, 1.2);
  ctx.save();
  ctx.translate(cx, cy);
  ctx.rotate(twd * Math.PI / 180);
-
+ ctx.scale(s, s);
  ctx.strokeStyle = "rgba(248, 250, 252, 0.85)";
- ctx.fillStyle = "rgba(248, 250, 252, 0.85)";
- ctx.lineWidth = 2;
-
+ ctx.lineWidth = 2 / s;
  ctx.beginPath();
  ctx.moveTo(0, -12);
  ctx.lineTo(0, 12);
@@ -2226,15 +2627,27 @@
  ctx.moveTo(0, 12);
  ctx.lineTo(5, 5);
  ctx.stroke();
- 
- ctx.rotate(-twd * Math.PI / 180);
+ ctx.restore();
+
+ if (Math.min(w, h) > 34) {
+ ctx.save();
+ ctx.fillStyle = "rgba(248, 250, 252, 0.85)";
  ctx.font = "10px sans-serif";
  ctx.textAlign = "center";
- ctx.fillText(tws.toFixed(1) + " kn", 0, -16);
- 
+ ctx.fillText(tws.toFixed(1) + " kn", cx, cy - 16 * s - 2);
  ctx.restore();
  }
  }
+ }
+
+ // contorno del riquadro
+ const nw = cellPt(0, 0), se = cellPt(rows, cols);
+ ctx.save();
+ ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+ ctx.setLineDash([6, 4]);
+ ctx.lineWidth = 1;
+ ctx.strokeRect(nw.x, nw.y, se.x - nw.x, se.y - nw.y);
+ ctx.restore();
  }
 
  function drawTacticalMap(plan, boatLat, boatLon, boatHdg, lineCtx) {
@@ -2246,32 +2659,49 @@
 
  ctx.clearRect(0, 0, W, H);
  
- // Disegna sempre i quadranti e le frecce del vento in tutte le fasi
- drawWindMatrixArrows(ctx, W, H);
 
+ const isPartenza = (currentViewMode === 'PARTENZA');
+
+ // Vista Campo: il riquadro del vento coincide con l'area del plotter (lo adatta se serve, prima di proiettare)
+ if (!isPartenza) ensureWindBoxFitsPlotter(plan);
+
+ // Proiezione locale in NM. In Vista Campo usa la stessa latitudine di riferimento del riquadro (centro),
+ // così il riquadro ha esattamente il rapporto d'aspetto del plotter.
+ const cosK = (!isPartenza && windGridBox)
+ ? Math.cos(toRad((windGridBox.latMin + windGridBox.latMax) / 2))
+ : Math.cos(toRad(plan.startLat));
  const toNM = (lat, lon) => ({
- x: (lon - plan.startLon) * Math.cos(toRad(plan.startLat)) * 60,
+ x: (lon - plan.startLon) * cosK * 60,
  y: (lat - plan.startLat) * 60
  });
 
  const boatNM = toNM(boatLat, boatLon);
- let pointsForVP = [boatNM];
-
- const isPartenza = (currentViewMode === 'PARTENZA');
+ const overlayEl = document.getElementById('windMatrixOverlay');
+ let vp;
 
  if (isPartenza) {
+ // Vista Partenza: NIENTE matrice del vento (né celle né overlay). Scala ottimizzata su linea di partenza + barca.
+ if (overlayEl) overlayEl.style.display = 'none';
+ const ptsStart = [boatNM];
  if (lineCtx) {
- pointsForVP.push(toNM(lineCtx.latGiuria, lineCtx.lonGiuria));
- pointsForVP.push(toNM(lineCtx.latPin, lineCtx.lonPin));
+ ptsStart.push(toNM(lineCtx.latGiuria, lineCtx.lonGiuria));
+ ptsStart.push(toNM(lineCtx.latPin, lineCtx.lonPin));
  }
+ vp = makeViewport(ptsStart, W, H, 60, 0.05);
  } else {
- pointsForVP.push(toNM(plan.startLat, plan.startLon));
- pointsForVP.push(toNM(plan.targetLat, plan.targetLon));
- if (plan.needsSecondLeg) pointsForVP.push(toNM(plan.interLat, plan.interLon));
- marks.forEach(m => pointsForVP.push(toNM(m.lat, m.lon)));
+ // Vista Campo: la matrice ricopre l'intero plotter; barca, boe e punti di virata/abbattuta sono tutti dentro.
+ if (windGridBox) {
+ vp = makeBoxViewport(windGridBox, W, H, toNM);
+ } else {
+ const ptsCampo = [boatNM, toNM(plan.startLat, plan.startLon), toNM(plan.targetLat, plan.targetLon)];
+ if (plan.needsSecondLeg) ptsCampo.push(toNM(plan.interLat, plan.interLon));
+ marks.forEach(m => ptsCampo.push(toNM(m.lat, m.lon)));
+ vp = makeViewport(ptsCampo, W, H, CAMPO_MARGIN_PX, CAMPO_MIN_SPAN_NM);
  }
-
- const vp = makeViewport(pointsForVP, W, H, 40, 0.05);
+ drawWindMatrixArrows(ctx, vp, toNM);
+ positionWindOverlay(vp, toNM);
+ if (overlayEl) overlayEl.style.display = windMatrixActive ? 'grid' : 'none';
+ }
  const viewRect = { x0: 0, x1: W, y0: 0, y1: H };
 
  if (isPartenza) {
@@ -2347,10 +2777,18 @@
  window.onload = () => {
  if (!loadSettings()) {
  initWindMatrix();
+ renderMarksUI();
  applyBoatPreset();
  }
+ const sel = document.getElementById('targetMarkSelect');
+ if (sel && !sel.value && marks[0]) sel.value = marks[0].id;   // prima esecuzione: boa obiettivo predefinita
+ if (!windGridBox) fitWindBoxToCourse(false);
+ updateMatrixBoxInfo();
  updateLiveStatus();
  setInterval(updateLiveStatus, 5000);
+ // il riquadro del vento segue la forma del plotter: ridisegna quando cambia la dimensione della finestra
+ let resizeTimer = null;
+ window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(updateLiveStatus, 200); });
  };
 </script>
 </body>
