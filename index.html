@@ -2,15 +2,14 @@
 <html lang="it">
 <head>
  <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>TatticaRegata Pro - Assistant Tattico Multiscafo / Monotipo</title>
- <!-- Tailwind CSS CDN -->
- <script src="https://cdn.tailwindcss.com"></script>
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+ <title>TatticaRegata Pro - Assistente Tattico Multiscafo / Monotipo</title>
  <style>
- :root {
+:root {
  --bg-dark: #0b1120;
  --bg-card: #151e32;
  --bg-input: #1e293b;
+ --bg-elevated: #1a2540;
  --border: #334155;
  --text: #f8fafc;
  --text-muted: #94a3b8;
@@ -22,416 +21,569 @@
  --gold: #fbbf24;
  --purple: #a855f7;
  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
- }
+ --safe-t: env(safe-area-inset-top, 0px);
+ --safe-b: env(safe-area-inset-bottom, 0px);
+}
 
- * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
- body {
+html { scroll-padding-top: calc(56px + var(--safe-t)); }
+
+body {
  background-color: var(--bg-dark);
  color: var(--text);
  font-family: var(--font);
- padding: 15px;
  line-height: 1.4;
- }
+ font-variant-numeric: tabular-nums;
+ padding-bottom: calc(24px + var(--safe-b));
+}
 
- header {
- display: flex;
- justify-content: space-between;
- align-items: center;
- padding-bottom: 15px;
- border-bottom: 1px solid var(--border);
- margin-bottom: 20px;
- flex-wrap: wrap;
- gap: 10px;
- }
-
- h1 { font-size: 1.4rem; color: var(--cyan); display: flex; align-items: center; gap: 8px; font-weight: 800; }
- .subtitle { font-size: 0.85rem; color: var(--text-muted); }
-
- .btn-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
- .btn {
+/* ---------- Elementi di base riusati ovunque ---------- */
+.btn {
  background: var(--bg-input);
  color: var(--text);
  border: 1px solid var(--border);
  padding: 8px 12px;
- border-radius: 6px;
+ border-radius: 8px;
  cursor: pointer;
  font-weight: 600;
  font-size: 0.85rem;
- transition: all 0.15s ease-in-out;
+ transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
  user-select: none;
- }
- .btn:hover { background: #2d3748; border-color: var(--cyan); }
- .btn:active { transform: scale(0.94); }
- .btn-active { background: var(--cyan) !important; color: #000 !important; font-weight: 700; }
- 
- .btn-amber { background: var(--amber); color: #000; border: none; font-weight: 700; }
- .btn-amber:hover { background: #d97706; color: #fff; }
+ white-space: nowrap;
+}
+.btn:hover { background: #2d3748; border-color: var(--cyan); }
+.btn:active { transform: scale(0.95); }
+.btn-active { background: var(--cyan) !important; color: #000 !important; font-weight: 700; }
 
- .btn-green { background: var(--green); color: #000; border: none; font-weight: 700; }
- .btn-green:hover { background: #059669; color: #fff; }
+.btn-amber { background: var(--amber); color: #000; border: none; font-weight: 700; }
+.btn-amber:hover { background: #d97706; color: #fff; }
+.btn-green { background: var(--green); color: #000; border: none; font-weight: 700; }
+.btn-green:hover { background: #059669; color: #fff; }
+.btn-red { background: var(--red); color: #fff; border: none; font-weight: 700; }
+.btn-red:hover { background: #dc2626; }
+.btn-cyan { background: var(--cyan); color: #000; border: none; font-weight: 700; }
+.btn-cyan:hover { background: #0891b2; color: #fff; }
+.btn-gold { background: var(--gold); color: #000; border: none; font-weight: 800; }
+.btn-gold:hover { background: #d97706; color: #fff; }
+.btn-purple { background: var(--purple); color: #fff; border: none; font-weight: 700; }
+.btn-purple:hover { background: #9333ea; }
 
- .btn-red { background: var(--red); color: #fff; border: none; font-weight: 700; }
- .btn-red:hover { background: #dc2626; }
-
- .btn-cyan { background: var(--cyan); color: #000; border: none; font-weight: 700; }
- .btn-cyan:hover { background: #0891b2; color: #fff; }
-
- .btn-gold { background: var(--gold); color: #000; border: none; font-weight: 800; }
- .btn-gold:hover { background: #d97706; color: #fff; }
-
- .btn-purple { background: var(--purple); color: #fff; border: none; font-weight: 700; }
- .btn-purple:hover { background: #9333ea; }
- 
- .btn-cyan.btn-flash {
+.btn-cyan.btn-flash {
  background-color: var(--green) !important;
  color: #ffffff !important;
  box-shadow: 0 0 12px var(--green);
  transform: scale(0.96);
- }
+}
 
- .grid-layout {
- display: grid;
- grid-template-columns: 370px 1fr;
- gap: 20px;
- }
+.btn-block { width: 100%; }
+.btn-sm { padding: 5px 9px; font-size: 0.74rem; }
+.icon-btn { padding: 8px 10px; font-size: 1rem; line-height: 1; }
 
- @media (max-width: 960px) {
- .grid-layout { grid-template-columns: 1fr; }
- }
-
- .card {
+.card {
  background: var(--bg-card);
  border: 1px solid var(--border);
  border-radius: 10px;
- padding: 16px;
- margin-bottom: 15px;
- }
+ padding: 14px;
+}
 
- .card-title {
- font-size: 1rem;
+.card-title {
+ font-size: 0.95rem;
  font-weight: 700;
  color: var(--amber);
- margin-bottom: 12px;
- display: flex;
- align-items: center;
- justify-content: space-between;
- border-bottom: 1px solid rgba(255,255,255,0.05);
- padding-bottom: 6px;
- }
-
- .form-row {
- display: grid;
- grid-template-columns: 1fr 1fr;
- gap: 10px;
  margin-bottom: 10px;
- }
-
- .form-group {
  display: flex;
- flex-direction: column;
- gap: 4px;
- }
+ align-items: baseline;
+ justify-content: space-between;
+ gap: 8px;
+ border-bottom: 1px solid rgba(255,255,255,0.06);
+ padding-bottom: 6px;
+}
+.card-title .cap { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
 
- label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
- input[type="text"], input[type="number"], select {
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.form-row:last-child { margin-bottom: 0; }
+.form-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
+
+input[type="text"], input[type="number"], select {
  background: var(--bg-input);
  border: 1px solid var(--border);
  color: var(--text);
- padding: 7px 10px;
- border-radius: 6px;
- font-size: 0.88rem;
+ padding: 8px 10px;
+ border-radius: 7px;
+ font-size: 0.9rem;
  font-weight: 600;
  width: 100%;
- }
- input:focus, select:focus { outline: none; border-color: var(--cyan); }
+}
+input:focus, select:focus { outline: none; border-color: var(--cyan); }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
 
- .checkbox-grid {
- display: grid;
- grid-template-columns: 1fr 1fr;
- gap: 8px;
- font-size: 0.8rem;
- }
+.checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; }
+.checkbox-grid label { display: flex; align-items: center; gap: 6px; color: var(--text); cursor: pointer; }
+.checkbox-grid input[type="checkbox"] { accent-color: var(--cyan); width: 15px; height: 15px; cursor: pointer; }
 
- .checkbox-grid label {
- display: flex;
- align-items: center;
- gap: 6px;
- color: var(--text);
- cursor: pointer;
- }
+.badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; }
+.mark-row { background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+.wind-cell-arrow { display: inline-block; transition: transform 0.2s ease; }
 
- .checkbox-grid input[type="checkbox"] {
- accent-color: var(--cyan);
- width: 15px;
- height: 15px;
- cursor: pointer;
- }
+/* ---------- Barra superiore ---------- */
+.topbar {
+ position: sticky; top: 0; z-index: 30;
+ display: flex; align-items: center; gap: 10px;
+ padding: calc(10px + var(--safe-t)) 14px 10px;
+ background: rgba(11, 17, 32, 0.92);
+ backdrop-filter: blur(6px);
+ border-bottom: 1px solid var(--border);
+}
+.topbar h1 { font-size: 1.05rem; color: var(--cyan); font-weight: 800; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.topbar .subtitle { display: none; }
+.topbar-spacer { flex: 1; }
 
- .tactical-banner {
+.view-switch { display: flex; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; }
+.view-switch button {
+ border: none; background: transparent; color: var(--text-muted);
+ padding: 7px 10px; border-radius: 6px; font-weight: 700; font-size: 0.78rem; cursor: pointer;
+}
+.view-switch button.active.mode-partenza { background: var(--gold); color: #000; }
+.view-switch button.active.mode-campo { background: var(--cyan); color: #000; }
+
+/* ---------- Contenuto principale ---------- */
+.app-main { max-width: 1400px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+
+.call-strip {
  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
  border-left: 5px solid var(--cyan);
  border-radius: 8px;
- padding: 16px;
- margin-bottom: 15px;
- }
+ padding: 12px 14px;
+ display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+}
+.call-strip-text { min-width: 0; }
+#favoredTackTitle { font-size: 1.02rem; font-weight: 800; color: var(--green); }
+#bannerDetail { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
 
- .banner-highlight {
- font-size: 1.15rem;
- font-weight: 800;
- color: var(--green);
- margin-bottom: 4px;
- }
+/* ---------- Plotter ---------- */
+.plotter-card { padding: 10px; }
+.plotter-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.plotter-head #plotterTitle { font-size: 0.95rem; font-weight: 700; }
+.plotter-head #plotterModeLabel { font-size: 0.72rem; font-weight: 700; }
 
- .banner-sub {
- font-size: 0.85rem;
- color: var(--text-muted);
- margin-bottom: 12px;
- }
+.plotter-actions { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+.plotter-actions select#targetMarkSelect { flex: 1; min-width: 0; border: 2px solid var(--amber); font-weight: 700; }
 
- .hero-target-card {
- background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%);
- border: 2px solid var(--cyan);
- border-radius: 12px;
- padding: 16px;
- margin-bottom: 15px;
- box-shadow: 0 0 20px rgba(6, 182, 212, 0.18);
- }
-
- .hero-grid {
- display: grid;
- grid-template-columns: 1.2fr 1.3fr 0.9fr;
- gap: 12px;
- }
-
- @media (max-width: 800px) {
- .hero-grid { grid-template-columns: 1fr; }
- }
-
- .hero-val-box {
- background: rgba(0, 0, 0, 0.4);
- border-radius: 8px;
- padding: 12px;
- border: 1px solid rgba(6, 182, 212, 0.35);
- display: flex;
- flex-direction: column;
- justify-content: center;
- }
-
- .hero-mega-val {
- font-size: 2.2rem;
- font-weight: 900;
- color: #38bdf8;
- line-height: 1.1;
- margin: 2px 0;
- }
-
- .hero-sub-val {
- font-size: 0.92rem;
- color: var(--amber);
- font-weight: 700;
- }
-
- .timer-box {
- border-radius: 8px;
- padding: 12px;
- display: flex;
- flex-direction: column;
- justify-content: center;
- transition: all 0.3s ease;
- }
- .timer-stopped {
- background: rgba(0, 0, 0, 0.4);
- border: 1px solid var(--border);
- }
- .timer-countdown {
- background: rgba(245, 158, 11, 0.2);
- border: 2px solid var(--amber);
- box-shadow: 0 0 14px rgba(245, 158, 11, 0.35);
- }
- .timer-racing {
- background: rgba(16, 185, 129, 0.2);
- border: 2px solid var(--green);
- box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
- }
-
- .secondary-plan-card {
- background: rgba(15, 23, 42, 0.6);
- border: 1px solid var(--border);
- border-radius: 8px;
- padding: 12px;
- margin-bottom: 15px;
- opacity: 0.95;
- }
-
- .secondary-title {
- font-size: 0.78rem;
- font-weight: 800;
- text-transform: uppercase;
- color: var(--text-muted);
- letter-spacing: 0.5px;
- margin-bottom: 10px;
- border-bottom: 1px dashed var(--border);
- padding-bottom: 4px;
- display: flex;
- justify-content: space-between;
- }
-
- .metrics-grid {
- display: grid;
- grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
- gap: 8px;
- }
-
- .metric-box {
- background: rgba(255,255,255,0.02);
- border: 1px solid var(--border);
- border-radius: 6px;
- padding: 8px 6px;
- text-align: center;
- }
-
- .metric-box.coord-box {
- background: rgba(245, 158, 11, 0.05);
- border-color: rgba(245, 158, 11, 0.25);
- }
-
- .metric-val { font-size: 1.1rem; font-weight: 700; color: var(--cyan); }
- .metric-val.amber { color: var(--amber); }
- .metric-val.green { color: var(--green); }
- .metric-lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
-
- #plotterContainer {
+#plotterContainer {
  width: 100%;
- height: clamp(340px, 60vh, 560px);
+ height: clamp(360px, 62vh, 620px);
  background: #070d19;
  border-radius: 8px;
  border: 1px solid var(--border);
  position: relative;
  overflow: hidden;
- }
+}
+canvas { width: 100%; height: 100%; display: block; }
 
- canvas { width: 100%; height: 100%; display: block; }
-
- #windMatrixOverlay {
- position: absolute;
- top: 0;
- left: 0;
- width: 100%;
- height: 100%;
- display: none;
- gap: 2px;
+#windMatrixOverlay {
+ position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+ display: none; gap: 2px;
  background: rgba(11, 17, 32, 0.5);
- padding: 4px;
- z-index: 20;
- pointer-events: auto;
- overflow-y: auto;
- }
+ padding: 4px; z-index: 20;
+ pointer-events: auto; overflow-y: auto;
+}
 
- .sail-info-box {
- display: grid;
- grid-template-columns: 1fr 1fr 1fr;
- gap: 10px;
- margin-top: 10px;
- }
+.plotter-legend { margin-top: 8px; font-size: 0.72rem; color: var(--text-muted); }
+.plotter-legend summary { cursor: pointer; font-weight: 700; color: var(--text-muted); list-style: none; }
+.plotter-legend summary::-webkit-details-marker { display: none; }
+.plotter-legend summary::before { content: "ⓘ "; }
+.plotter-legend[open] summary::before { content: "▾ "; }
+.plotter-legend div { margin-top: 6px; }
 
- @media (max-width: 600px) {
- .sail-info-box { grid-template-columns: 1fr; }
- }
+/* ---------- Riga informazioni: colonna singola su telefono, due colonne su tablet ---------- */
+.info-row { display: flex; flex-direction: column; gap: 12px; }
 
- .sail-card {
- background: #10172a;
- border: 1px solid var(--border);
- padding: 10px;
- border-radius: 6px;
- }
- .sail-card h4 { font-size: 0.8rem; color: var(--amber); margin-bottom: 4px; }
- .sail-card p { font-size: 0.85rem; font-weight: 600; }
+.obj-card .hdg-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+.obj-card .hdg-block { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 6px; }
+.obj-card .hdg-mega { font-size: 2.6rem; font-weight: 900; color: #38bdf8; line-height: 1; }
+.tack-badge {
+ display: inline-flex; align-items: center; gap: 4px;
+ padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 800;
+ background: rgba(6,182,212,0.15); border: 1px solid var(--cyan); color: var(--cyan);
+}
+.tack-badge.port { background: rgba(168,85,247,0.15); border-color: var(--purple); color: #c4a3ff; }
+#heroHdgNoLeeway { font-size: 0.85rem; color: var(--amber); font-weight: 700; }
+#heroLeewayNote { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
 
- .badge {
- display: inline-block;
- padding: 2px 6px;
- border-radius: 4px;
- font-size: 0.75rem;
- font-weight: 700;
- }
+.obj-target { border-top: 1px dashed var(--border); margin-top: 10px; padding-top: 10px; }
+#heroTargetName { font-size: 1rem; font-weight: 800; color: var(--text); }
+#heroTargetCoords { font-size: 0.95rem; font-weight: 700; margin-top: 2px; }
+#heroTargetDistBrg { font-size: 0.78rem; color: var(--cyan); font-weight: 700; margin-top: 2px; }
+.start-line-block { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+#heroStartLineDist { font-size: 0.78rem; font-weight: 800; }
+#heroLineBiasText { font-size: 0.74rem; font-weight: 700; margin-top: 2px; }
 
- .mark-row {
- background: rgba(0, 0, 0, 0.25);
- border: 1px solid var(--border);
- border-radius: 6px;
- padding: 8px;
- margin-bottom: 8px;
- }
- 
- .wind-cell-arrow {
- display: inline-block;
- transition: transform 0.2s ease;
- }
+/* ---------- Velocità + timer ---------- */
+.speed-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.speed-box { background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; text-align: center; }
+.speed-box .lbl { font-size: 0.66rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+.speed-box .val { font-size: 1.3rem; font-weight: 800; color: var(--text); margin-top: 2px; }
+.speed-box.stw .val { color: var(--amber); }
+.speed-box.sog .val { color: var(--green); }
+.gps-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.gps-row .btn { white-space: normal; text-align: center; }
 
- /* ---------- Header / toolbar ---------- */
- .toolbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: flex-end; }
- .tool-group {
- display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
- padding: 4px 6px;
- background: rgba(255,255,255,0.03);
- border: 1px solid var(--border);
- border-radius: 8px;
- }
+.timer-box {
+ border-radius: 8px; padding: 10px; transition: all 0.3s ease;
+ background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+}
+.timer-stopped { background: rgba(0,0,0,0.35); border: 1px solid var(--border); }
+.timer-countdown { background: rgba(245,158,11,0.18); border: 2px solid var(--amber); box-shadow: 0 0 14px rgba(245,158,11,0.3); }
+.timer-racing { background: rgba(16,185,129,0.18); border: 2px solid var(--green); box-shadow: 0 0 14px rgba(16,185,129,0.3); }
+.timer-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+#lblTimerHeader { font-size: 0.78rem; font-weight: 700; }
+#lblTimerStatus { font-size: 0.68rem; color: var(--text-muted); }
+#valLiveTimer { font-size: 1.7rem; font-weight: 900; cursor: pointer; margin: 4px 0; }
+.timer-quick { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.timer-setup { display: flex; gap: 6px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.timer-setup select { width: auto; flex: 1; min-width: 120px; }
 
- .tool-group select { width: auto; max-width: 240px; }
- .tool-group label { white-space: nowrap; }
+/* ---------- Dettagli bordo (compatto) ---------- */
+.details-card .card-title { color: var(--text-muted); }
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 8px; }
+.metric-box { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 6px; padding: 8px 6px; text-align: center; }
+.metric-val { font-size: 1.05rem; font-weight: 700; color: var(--cyan); }
+.metric-val.amber { color: var(--amber); }
+.metric-val.green { color: var(--green); }
+.metric-lbl { font-size: 0.66rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
 
- /* ---------- Sidebar a schede ---------- */
- .input-sidebar { min-width: 0; }
- @media (min-width: 961px) {
- .input-sidebar {
- position: sticky; top: 10px; align-self: start;
- max-height: calc(100vh - 20px); overflow-y: auto; padding-right: 4px;
- }
- }
- .side-tabs {
- display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
- margin-bottom: 12px;
- position: sticky; top: 0; z-index: 5;
- background: var(--bg-dark); padding-bottom: 4px;
- }
- .side-tab {
+/* ---------- Vele ---------- */
+.sail-info-box { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
+.sail-card { background: #10172a; border: 1px solid var(--border); padding: 10px; border-radius: 6px; }
+.sail-card h4 { font-size: 0.78rem; color: var(--amber); margin-bottom: 4px; }
+.sail-card p { font-size: 0.84rem; font-weight: 600; }
+@media (max-width: 620px) { .sail-info-box { grid-template-columns: 1fr; } }
+
+/* ---------- Cassetto impostazioni ---------- */
+.drawer-backdrop {
+ position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+ opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 40;
+}
+body.drawer-open .drawer-backdrop { opacity: 1; pointer-events: auto; }
+
+.drawer {
+ position: fixed; top: 0; right: 0; height: 100%;
+ width: min(400px, 92vw);
+ background: var(--bg-elevated);
+ border-left: 1px solid var(--border);
+ z-index: 41;
+ display: flex; flex-direction: column;
+ transform: translateX(100%);
+ transition: transform 0.25s ease;
+ padding-top: var(--safe-t); padding-bottom: var(--safe-b);
+}
+body.drawer-open .drawer { transform: translateX(0); }
+
+.drawer-header {
+ display: flex; align-items: center; justify-content: space-between;
+ padding: 14px 14px 10px; border-bottom: 1px solid var(--border);
+}
+.drawer-header h2 { font-size: 1rem; color: var(--cyan); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
+.drawer-footer { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+
+.side-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.side-tab {
  background: var(--bg-input); color: var(--text-muted);
  border: 1px solid var(--border); border-radius: 8px;
- padding: 6px 2px; cursor: pointer;
- font-size: 0.68rem; font-weight: 700; line-height: 1.2;
+ padding: 7px 2px; cursor: pointer;
+ font-size: 0.66rem; font-weight: 700; line-height: 1.2;
  display: flex; flex-direction: column; align-items: center; gap: 1px;
- }
- .side-tab span { font-size: 1.05rem; }
- .side-tab:hover { border-color: var(--cyan); color: var(--text); }
- .side-tab.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
- .side-pane { display: none; }
- .side-pane.active { display: block; }
+}
+.side-tab span { font-size: 1.05rem; }
+.side-tab:hover { border-color: var(--cyan); color: var(--text); }
+.side-tab.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
+.side-pane { display: none; flex-direction: column; gap: 12px; }
+.side-pane.active { display: flex; }
 
- /* ---------- Plotter + Vele affiancati su schermi larghi ---------- */
- .dashboard-main { min-width: 0; }
- .plot-row { display: block; }
- @media (min-width: 1400px) {
- .plot-row { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 15px; align-items: start; }
- .plot-row .sail-info-box { grid-template-columns: 1fr; }
- }
- .tactical-banner { padding: 12px; }
- .hero-target-card { padding: 12px; margin-bottom: 10px; }
+/* ---------- Layout a due colonne su tablet orizzontale / desktop ---------- */
+@media (min-width: 1000px) {
+ .info-row { flex-direction: row; align-items: flex-start; }
+ .dashboard-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
+ .dashboard-row .plotter-card { margin: 0; }
+ .side-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+ .info-row.side-col-inner { flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+ .obj-card .hdg-mega { font-size: 2.2rem; }
+ .topbar h1 span.full { display: none; }
+}
+
+@media (min-width: 480px) {
+ .topbar .subtitle { display: block; font-size: 0.72rem; color: var(--text-muted); }
+}
+
  </style>
 </head>
 <body>
 
-<header>
- <div>
- <h1>⛵ TatticaRegata Pro</h1>
- <div class="subtitle">Assistente Tattico Linea di Partenza & Ottimizzatore di Rotta</div>
+<div class="topbar">
+ <h1>⛵ <span class="full">TatticaRegata Pro</span></h1>
+ <div class="subtitle">Partenza & Ottimizzatore di Rotta</div>
+ <div class="topbar-spacer"></div>
+ <div class="view-switch" role="tablist">
+ <button type="button" id="btnViewPartenza" class="mode-partenza" onclick="setViewMode('PARTENZA')">🏁 Partenza</button>
+ <button type="button" id="btnViewCampo" class="mode-campo" onclick="setViewMode('CAMPO')">🗺️ Campo</button>
  </div>
- <div class="toolbar">
- <!-- Barca / GPS / Vista -->
- <div class="tool-group">
- <label style="font-size:0.8rem; color:var(--amber);">Preset:</label>
- <select id="presetSelector" class="btn" onchange="applyBoatPreset()">
+ <button type="button" id="btnOpenSettings" class="btn icon-btn" onclick="openSettings()" title="Impostazioni" aria-label="Apri impostazioni">⚙️</button>
+</div>
+
+<div class="app-main">
+
+ <!-- CHIAMATA TATTICA -->
+ <div class="call-strip">
+ <div class="call-strip-text">
+ <div id="favoredTackTitle">BORDO FAVOREVOLE: CLICCA RICALCOLA</div>
+ <div id="bannerDetail">--</div>
+ </div>
+ <button type="button" id="btnArrivo" class="btn btn-green btn-sm" onclick="setLegState('ARRIVO')">🏁 Arrivo / Congela</button>
+ </div>
+
+ <div class="dashboard-row">
+ <!-- PLOTTER -->
+ <div class="card plotter-card">
+ <div class="plotter-head">
+ <span id="plotterTitle">🗺️ Plotter Tattico & Matrice del Vento</span>
+ <span id="plotterModeLabel" style="color:var(--amber);">Modalità Vista Partenza</span>
+ </div>
+
+ <div class="plotter-actions">
+ <select id="targetMarkSelect" onchange="requestRecalc(0)" title="Prossima boa obiettivo">
+ <!-- Popolato dinamicamente -->
+ </select>
+ <button type="button" id="btnToggleMatrix" class="btn btn-cyan icon-btn" onclick="toggleWindMatrix()" title="Aggiorna la matrice del vento">💨</button>
+ <button type="button" id="btnRecalc" class="btn btn-cyan icon-btn btn-calc-trigger" onclick="onCalculatePressed(this)" title="Ricalcola il piano di rotta">🔁</button>
+ </div>
+
+ <div id="plotterContainer">
+ <canvas id="tacticalCanvas"></canvas>
+ <div id="windMatrixOverlay"></div>
+ </div>
+
+ <details class="plotter-legend">
+ <summary>Legenda colori plotter e note sulla matrice</summary>
+ <div>
+ 🟣 <i>Viola</i>: Meno vento rispetto alla base<br>
+ 🟢 <i>Verde</i>: Più vento rispetto alla base<br>
+ ⬇️ <i>Freccia</i>: Direzione in cui soffia il vento<br>
+ 📍 Le celle sono ancorate alle coordinate del campo, non allo schermo: il vento è interpolato tra i centri delle celle. Cambiare TWD/TWS base sposta tutto il campo mantenendo le differenze.
+ </div>
+ </details>
+ </div>
+
+ <!-- COLONNA INFO: prossimo obiettivo, velocità/timer, dettagli -->
+ <div class="side-col">
+ <div class="info-row side-col-inner">
+
+ <div class="card obj-card">
+ <div class="card-title"><span id="heroTargetHeader">🎯 Target Attuale</span></div>
+
+ <div class="hdg-label">Prua Prossimo Bordo</div>
+ <div class="hdg-block">
+ <div class="hdg-mega" id="heroHdgWithLeeway">--°</div>
+ <span class="tack-badge" id="tackBadge">--</span>
+ </div>
+ <div id="heroHdgNoLeeway">Rilevamento BRG Target: --°</div>
+ <div id="heroLeewayNote">Prua bussola istantanea da timonare</div>
+
+ <div class="obj-target">
+ <div id="heroTargetName">--</div>
+ <div id="heroTargetCoords">--</div>
+ <div id="heroTargetDistBrg">--</div>
+ </div>
+
+ <div class="start-line-block" id="startLineBlock">
+ <div id="heroStartLineDist">Dist. Linea: -- | TTL: --</div>
+ <div id="heroLineBiasText">Line Bias: --</div>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-title"><span>⏱️ Velocità & Timer</span></div>
+
+ <div class="speed-duo">
+ <div class="speed-box stw">
+ <div class="lbl">Stimata (STW)</div>
+ <div class="val" id="valSTWEst">-- kn</div>
+ </div>
+ <div class="speed-box sog">
+ <div class="lbl">GPS (SOG)</div>
+ <div class="val" id="valSOG">-- kn</div>
+ </div>
+ </div>
+ <div class="gps-row">
+ <button type="button" id="gpsBtn" class="btn btn-amber btn-sm" onclick="toggleGPS()">📡 Attiva GPS Reale</button>
+ </div>
+
+ <div class="timer-box timer-stopped" id="timerContainerBox">
+ <div class="timer-head">
+ <span id="lblTimerHeader">⏱️ Timer Regata</span>
+ <span id="lblTimerStatus">Pronto / Inattivo</span>
+ </div>
+ <div id="valLiveTimer" onclick="editTimerManually()" title="Clicca per modificare il tempo a mano">00:00</div>
+ <div class="timer-quick">
+ <button type="button" class="btn btn-sm" onclick="adjustTimer(60)">+1m</button>
+ <button type="button" class="btn btn-sm" onclick="adjustTimer(-60)">-1m</button>
+ <button type="button" class="btn btn-sm" onclick="adjustTimer(10)">+10s</button>
+ <button type="button" class="btn btn-sm" onclick="adjustTimer(-10)">-10s</button>
+ <button type="button" class="btn btn-cyan btn-sm" onclick="syncTimer()">SYNC</button>
+ </div>
+ <div class="timer-setup">
+ <select id="startTimerSelect" class="btn">
+ <option value="300">5 Minuti (5-4-1-0)</option>
+ <option value="240">4 Minuti</option>
+ <option value="60">1 Minuto</option>
+ </select>
+ <button type="button" id="timerStartBtn" class="btn btn-amber btn-sm" onclick="startStartSequence()">▶️ Avvia</button>
+ <button type="button" id="timerStopBtn" class="btn btn-red btn-sm" onclick="stopRegattaTimer()">⏹️ Stop</button>
+ <button type="button" class="btn btn-sm" onclick="resetTimer()">🔄 Azzera</button>
+ </div>
+ </div>
+ </div>
+
+ <div class="card details-card">
+ <div class="card-title"><span>📋 Dettagli Bordo</span></div>
+ <div class="metrics-grid">
+ <div class="metric-box">
+ <div class="metric-lbl">Tempo Bordo</div>
+ <div class="metric-val" id="valTime1">-- min</div>
+ </div>
+ <div class="metric-box">
+ <div class="metric-lbl">Tempo Tot. Matrice</div>
+ <div class="metric-val" id="valTimeTotal">-- min</div>
+ </div>
+ <div class="metric-box">
+ <div class="metric-lbl">Dist. alla Boa</div>
+ <div class="metric-val" id="valDistTotal">-- NM</div>
+ </div>
+ <div class="metric-box">
+ <div class="metric-lbl">VMG Effettiva</div>
+ <div class="metric-val green" id="valVMG">-- kn</div>
+ </div>
+ </div>
+ </div>
+
+ </div>
+ </div>
+ </div>
+
+ <!-- VELE -->
+ <div class="card">
+ <div class="card-title"><span>⚙️ Raccomandazione Vele & Assetto</span></div>
+ <div class="sail-info-box">
+ <div class="sail-card"><h4>Vela / Portante Consigliata</h4><p id="recHeadsail">--</p></div>
+ <div class="sail-card"><h4>Randa & Trasto</h4><p id="recMainsail">--</p></div>
+ <div class="sail-card"><h4>Inclinazione Target</h4><p id="recHeel">--°</p></div>
+ </div>
+ <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);" id="tacticalAdvice">
+ 💡 <b>Consiglio Tattico:</b> Caricamento in corso...
+ </div>
+ </div>
+
+</div>
+
+<!-- CASSETTO IMPOSTAZIONI -->
+<div class="drawer-backdrop" onclick="closeSettings()"></div>
+<div class="drawer" id="settingsDrawer" role="dialog" aria-label="Impostazioni">
+ <div class="drawer-header">
+ <h2>⚙️ Impostazioni</h2>
+ <button type="button" class="btn icon-btn" onclick="closeSettings()" aria-label="Chiudi impostazioni">✕</button>
+ </div>
+
+ <div class="drawer-body">
+ <div class="side-tabs" role="tablist">
+ <button type="button" class="side-tab active" id="tab-posizione" onclick="showSideTab('posizione')"><span>📍</span>Posizione</button>
+ <button type="button" class="side-tab" id="tab-campo" onclick="showSideTab('campo')"><span>🏁</span>Campo</button>
+ <button type="button" class="side-tab" id="tab-barca" onclick="showSideTab('barca')"><span>⛵</span>Barca</button>
+ <button type="button" class="side-tab" id="tab-vento" onclick="showSideTab('vento')"><span>💨</span>Vento</button>
+ </div>
+
+ <!-- POSIZIONE -->
+ <div class="side-pane active" id="pane-posizione">
+ <div class="card">
+ <div class="card-title"><span>📍 Posizione & Stato Navigazione</span></div>
+ <div class="form-row">
+ <div class="form-group"><label>Latitudine Barca</label><input type="number" id="latBoat" value="40.7082" step="0.0001" onchange="requestRecalc()"></div>
+ <div class="form-group"><label>Longitudine Barca</label><input type="number" id="lonBoat" value="14.4600" step="0.0001" onchange="requestRecalc()"></div>
+ </div>
+ <div class="form-row" style="margin-top:6px;">
+ <div class="form-group">
+ <label>Prua / COG Attuale (°)</label>
+ <div style="display:flex; gap:5px;">
+ <input type="number" id="hdgBoat" value="10" min="0" max="359" onchange="updateLiveStatus()">
+ <button type="button" class="btn btn-amber" style="padding:0 10px; font-size:0.9rem;" title="Allinea prua al bordo attivo" onclick="alignHeadingToRoute()">🎯</button>
+ </div>
+ </div>
+ <div class="form-group">
+ <label>Stato Regata</label>
+ <div style="font-size:0.78rem; color:var(--text-muted); padding-top:6px;">Usa "Arrivo / Congela" sulla chiamata tattica in alto.</div>
+ </div>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-title"><span>💨 Condizioni Vento Base</span></div>
+ <div class="form-row">
+ <div class="form-group"><label>Direzione Vento (Globale) (°)</label><input type="number" id="twd" value="10" min="0" max="359" onchange="updateGlobalWind()"></div>
+ <div class="form-group"><label>Intensità Vento (Globale) (kn)</label><input type="number" id="tws" value="10" min="1" max="50" onchange="updateGlobalWind()"></div>
+ </div>
+ </div>
+ </div>
+
+ <!-- CAMPO -->
+ <div class="side-pane" id="pane-campo">
+ <div class="card">
+ <div class="card-title">
+ <span>🏁 Linea di Partenza</span>
+ <span class="badge" style="background:#1e293b; color:var(--amber)">GPS / Ping</span>
+ </div>
+ <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Barca Giuria (Estremo Dritto / Starboard):</div>
+ <div class="form-row" style="margin-bottom:4px;">
+ <div class="form-group"><input type="number" id="latGiuria" value="40.7090" step="0.0001" onchange="onStartLineChanged()"></div>
+ <div class="form-group"><input type="number" id="lonGiuria" value="14.4610" step="0.0001" onchange="onStartLineChanged()"></div>
+ </div>
+ <button type="button" class="btn btn-amber btn-block" style="margin-bottom:10px; padding:4px 8px; font-size:0.75rem;" onclick="pingGiuria()">📍 Ping GPS Posizione Giuria</button>
+
+ <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Boa Pin (Estremo Sinistro / Port):</div>
+ <div class="form-row" style="margin-bottom:4px;">
+ <div class="form-group"><input type="number" id="latPin" value="40.7095" step="0.0001" onchange="onStartLineChanged()"></div>
+ <div class="form-group"><input type="number" id="lonPin" value="14.4590" step="0.0001" onchange="onStartLineChanged()"></div>
+ </div>
+ <button type="button" class="btn btn-amber btn-block" style="padding:4px 8px; font-size:0.75rem;" onclick="pingPin()">📍 Ping GPS Posizione Boa Pin</button>
+ </div>
+
+ <div class="card">
+ <div class="card-title">
+ <span>🏁 Campo di Regata & Boe</span>
+ <button type="button" class="btn btn-cyan btn-sm" onclick="addMark()">+ Aggiungi Boa</button>
+ </div>
+ <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">
+ La prossima boa obiettivo si sceglie sopra il plotter. Qui si configurano le coordinate di tutte le boe del campo.
+ </div>
+ <div id="marksListContainer" style="max-height: 320px; overflow-y: auto; padding-right:2px;">
+ <!-- Content generated via JS -->
+ </div>
+ </div>
+ </div>
+
+ <!-- BARCA -->
+ <div class="side-pane" id="pane-barca">
+ <div class="card">
+ <div class="card-title">
+ <span>⛵ Preset & Dati Imbarcazione</span>
+ <span class="badge" style="background:#1e293b; color:var(--cyan)">Polare Target</span>
+ </div>
+ <div class="form-group" style="margin-bottom:10px;">
+ <label>Preset Barca / Vento</label>
+ <select id="presetSelector" onchange="applyBoatPreset()">
  <optgroup label="Dufour 31">
  <option value="dufour6">Dufour 31 - Brezza Leggera (6 kn)</option>
  <option value="dufour10" selected>Dufour 31 - Vento Medio (10 kn)</option>
@@ -457,169 +609,18 @@
  <option value="comet910_18">Comet 910 - Vento Forte (18 kn)</option>
  </optgroup>
  </select>
- <button id="gpsBtn" class="btn btn-amber" onclick="toggleGPS()">📡 Attiva GPS Reale</button>
- <button id="viewModeToggleBtn" class="btn btn-gold" onclick="toggleViewMode()">🏁 Vista Partenza</button>
- </div>
-
- <!-- Timer di partenza (le regolazioni +/- e SYNC sono nel riquadro del conto alla rovescia) -->
- <div class="tool-group">
- <select id="startTimerSelect" class="btn" style="width: auto;">
- <option value="300">5 Minuti (5-4-1-0)</option>
- <option value="240">4 Minuti</option>
- <option value="60">1 Minuto</option>
- </select>
- <button id="timerStartBtn" class="btn btn-amber" onclick="startStartSequence()">⏱️ Avvia Partenza</button>
- <button id="timerStopBtn" class="btn btn-red" onclick="stopRegattaTimer()">⏹️ STOP</button>
- <button class="btn" onclick="resetTimer()">🔄 Azzera</button>
- </div>
-
- <!-- Ricalcolo -->
- <div class="tool-group">
- <button class="btn btn-cyan btn-calc-trigger" onclick="onCalculatePressed(this)" title="Ricalcola il piano di rotta">🔁 Ricalcola</button>
- </div>
-
- <!-- Salvataggio -->
- <div class="tool-group">
- <button id="saveBtn" class="btn btn-green" onclick="manualSaveSettings()">💾 Salva Ora</button>
- <button id="resetStorageBtn" class="btn btn-red" onclick="resetStoredSettings()">🗑️ Reset Dati</button>
- </div>
- </div>
-</header>
-
-<div class="grid-layout">
-<div class="input-sidebar">
- <!-- TAB BAR -->
- <div class="side-tabs" role="tablist">
- <button type="button" class="side-tab active" id="tab-nav" onclick="showSideTab('nav')"><span>🧭</span>Navigazione</button>
- <button type="button" class="side-tab" id="tab-campo" onclick="showSideTab('campo')"><span>🏁</span>Campo</button>
- <button type="button" class="side-tab" id="tab-barca" onclick="showSideTab('barca')"><span>⛵</span>Barca</button>
- <button type="button" class="side-tab" id="tab-vento" onclick="showSideTab('vento')"><span>💨</span>Matrice</button>
- </div>
-
- <div class="side-pane active" id="pane-nav">
- <!-- NAVIGAZIONE: posizione + vento base -->
- <!-- BOAT POSITION CARD -->
- <div class="card">
- <div class="card-title">
- <span>📍 Posizione & Stato Navigazione</span>
  </div>
  <div class="form-row">
- <div class="form-group"><label>Latitudine Barca</label><input type="number" id="latBoat" value="40.7082" step="0.0001" onchange="requestRecalc()"></div>
- <div class="form-group"><label>Longitudine Barca</label><input type="number" id="lonBoat" value="14.4600" step="0.0001" onchange="requestRecalc()"></div>
- </div>
- <div class="form-row" style="margin-top:6px;">
- <div class="form-group">
- <label>Prua / COG Attuale (°)</label>
- <div style="display:flex; gap:5px;">
- <input type="number" id="hdgBoat" value="10" min="0" max="359" onchange="updateLiveStatus()">
- <button class="btn btn-amber" style="padding:0 10px; font-size:0.9rem;" title="Allinea prua al bordo attivo" onclick="alignHeadingToRoute()">🎯</button>
- </div>
- </div>
- <div class="form-group">
- <label>Stato Regata</label>
- <button id="btnArrivo" class="btn btn-green" style="width:100%; padding:7px 0;" onclick="setLegState('ARRIVO')">🏁 Arrivo / Congela</button>
- </div>
- </div>
- </div>
-
- <!-- WIND CONDITIONS CARD -->
- <div class="card">
- <div class="card-title">
- <span>💨 Condizioni Vento Base</span>
+ <div class="form-group"><label>Modello Barca</label><input type="text" id="boatName" value="Dufour 31" onchange="updateLiveStatus()"></div>
+ <div class="form-group"><label>Velocità Bolina (kn)</label><input type="number" id="targetSTW" value="5.0" step="0.1" onchange="requestRecalc()"></div>
  </div>
  <div class="form-row">
- <div class="form-group">
- <label>Direzione Vento (Globale) (°)</label>
- <input type="number" id="twd" value="10" min="0" max="359" onchange="updateGlobalWind()">
- </div>
- <div class="form-group">
- <label>Intensità Vento (Globale) (kn)</label>
- <input type="number" id="tws" value="10" min="1" max="50" onchange="updateGlobalWind()">
- </div>
- </div>
- </div>
- </div>
-
- <div class="side-pane" id="pane-campo">
- <!-- LINEA DI PARTENZA CARD -->
- <div class="card">
- <div class="card-title">
- <span>🏁 Linea di Partenza</span>
- <span class="badge" style="background:#1e293b; color:var(--amber)">GPS / Ping</span>
- </div>
- 
- <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Barca Giuria (Estremo Dritto / Starboard):</div>
- <div class="form-row" style="margin-bottom:4px;">
- <div class="form-group"><input type="number" id="latGiuria" value="40.7090" step="0.0001" onchange="onStartLineChanged()"></div>
- <div class="form-group"><input type="number" id="lonGiuria" value="14.4610" step="0.0001" onchange="onStartLineChanged()"></div>
- </div>
- <button class="btn btn-amber" style="width:100%; margin-bottom:10px; padding:4px 8px; font-size:0.75rem;" onclick="pingGiuria()">📍 Ping GPS Posizione Giuria</button>
-
- <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Boa Pin (Estremo Sinistro / Port):</div>
- <div class="form-row" style="margin-bottom:4px;">
- <div class="form-group"><input type="number" id="latPin" value="40.7095" step="0.0001" onchange="onStartLineChanged()"></div>
- <div class="form-group"><input type="number" id="lonPin" value="14.4590" step="0.0001" onchange="onStartLineChanged()"></div>
- </div>
- <button class="btn btn-amber" style="width:100%; margin-bottom:10px; padding:4px 8px; font-size:0.75rem;" onclick="pingPin()">📍 Ping GPS Posizione Boa Pin</button>
- </div>
-
- <!-- MARKS & COURSE CONFIG -->
- <div class="card">
- <div class="card-title">
- <span>🏁 Campo di Regata & Boe</span>
- <button class="btn btn-cyan" style="padding: 2px 8px; font-size:0.75rem;" onclick="addMark()">+ Aggiungi Boa</button>
- </div>
- 
- <div class="form-group" style="margin-bottom:12px;">
- <label style="color:var(--amber); font-weight:bold;">🎯 Prossima Boa Obiettivo (Obbligatoria)</label>
- <select id="targetMarkSelect" onchange="requestRecalc(0)" style="border: 2px solid var(--amber);">
- <!-- Popolato dinamicamente -->
- </select>
- </div>
-
- <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Configurazione Coordinate Boe:</div>
- <div id="marksListContainer" style="max-height: 280px; overflow-y: auto; padding-right:2px;">
- <!-- Content generated via JS -->
- </div>
- </div>
- </div>
-
- <div class="side-pane" id="pane-barca">
- <!-- BOAT DATA CARD -->
- <div class="card">
- <div class="card-title">
- <span>⛵ Dati Imbarcazione</span>
- <span class="badge" style="background:#1e293b; color:var(--cyan)">Polare Target</span>
+ <div class="form-group"><label>Velocità Poppa (kn)</label><input type="number" id="targetSTWDown" value="4.8" step="0.1" onchange="requestRecalc()"></div>
+ <div class="form-group"><label>Angolo Bolina Target (°)</label><input type="number" id="targetTWA" value="44" step="1" onchange="requestRecalc()"></div>
  </div>
  <div class="form-row">
- <div class="form-group">
- <label>Modello Barca</label>
- <input type="text" id="boatName" value="Dufour 31" onchange="updateLiveStatus()">
- </div>
- <div class="form-group">
- <label>Velocità Bolina (kn)</label>
- <input type="number" id="targetSTW" value="5.0" step="0.1" onchange="requestRecalc()">
- </div>
- </div>
- <div class="form-row">
- <div class="form-group">
- <label>Velocità Poppa (kn)</label>
- <input type="number" id="targetSTWDown" value="4.8" step="0.1" onchange="requestRecalc()">
- </div>
- <div class="form-group">
- <label>Angolo Bolina Target (°)</label>
- <input type="number" id="targetTWA" value="44" step="1" onchange="requestRecalc()">
- </div>
- </div>
- <div class="form-row">
- <div class="form-group">
- <label>Angolo Poppa Target (°)</label>
- <input type="number" id="targetTWADown" value="165" step="1" onchange="requestRecalc()">
- </div>
- <div class="form-group">
- <label>Scarroccio Stimato (°)</label>
- <input type="number" id="leeway" value="6" step="1" onchange="requestRecalc()">
- </div>
+ <div class="form-group"><label>Angolo Poppa Target (°)</label><input type="number" id="targetTWADown" value="165" step="1" onchange="requestRecalc()"></div>
+ <div class="form-group"><label>Scarroccio Stimato (°)</label><input type="number" id="leeway" value="6" step="1" onchange="requestRecalc()"></div>
  </div>
  <div class="form-row">
  <div class="form-group">
@@ -632,7 +633,6 @@
  </div>
  </div>
 
- <!-- SAILS INVENTORY CARD -->
  <div class="card">
  <div class="card-title">
  <span>🎒 Vele Disponibili a Bordo</span>
@@ -654,169 +654,39 @@
  </div>
  </div>
 
+ <!-- VENTO -->
  <div class="side-pane" id="pane-vento">
- <!-- WIND MATRIX CONFIG CARD -->
  <div class="card">
  <div class="card-title">
- <span>💨 Matrice del Vento Interattiva</span>
+ <span>💨 Matrice del Vento</span>
  <span class="badge" style="background:#1e293b; color:var(--cyan)">Meteo Locale</span>
  </div>
+ <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">
+ Il pulsante 💨 sopra il plotter apre la matrice per modificarla durante la navigazione. Qui si configurano righe/colonne e si adatta il riquadro.
+ </div>
  <div class="form-row">
- <div class="form-group">
- <label>Righe (m, max 9)</label>
- <input type="number" id="matrixRowsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()">
+ <div class="form-group"><label>Righe (m, max 9)</label><input type="number" id="matrixRowsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()"></div>
+ <div class="form-group"><label>Colonne (n, max 9)</label><input type="number" id="matrixColsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()"></div>
  </div>
- <div class="form-group">
- <label>Colonne (n, max 9)</label>
- <input type="number" id="matrixColsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()">
+ <div style="display:flex; gap:6px; margin-top:4px;">
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="fitWindBoxToCourse(true)" title="Ricalcola il riquadro geografico da boe e linea di partenza">📐 Adatta al campo</button>
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="resetMatrixToBase()" title="Azzera le differenze tra le celle">↺ Uniforma</button>
  </div>
- </div>
- <button id="btnToggleMatrix" class="btn btn-cyan" style="width:100%; margin-top:4px;" onclick="toggleWindMatrix()">💨 Matrice del Vento</button>
- <div style="display:flex; gap:6px; margin-top:6px;">
- <button class="btn" style="flex:1; font-size:0.72rem;" onclick="fitWindBoxToCourse(true)" title="Ricalcola il riquadro geografico da boe e linea di partenza">📐 Adatta riquadro al campo</button>
- <button class="btn" style="flex:1; font-size:0.72rem;" onclick="resetMatrixToBase()" title="Azzera le differenze tra le celle">↺ Uniforma al vento base</button>
- </div>
- <div id="matrixBoxInfo" style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;"></div>
- <div style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;">
- 💡 <b>Legenda Colori Plotter:</b><br>
- 🟣 <i>Viola</i>: Meno vento rispetto alla base<br>
- 🟢 <i>Verde</i>: Più vento rispetto alla base<br>
- ⬇️ <i>Freccia</i>: Direzione in cui soffia il vento<br>
- 📍 Le celle sono ancorate alle coordinate del campo (riquadro tratteggiato), non allo schermo: il vento è interpolato tra i centri delle celle. Cambiare TWD/TWS base sposta tutto il campo mantenendo le differenze.
- </div>
+ <div id="matrixBoxInfo" style="font-size:0.72rem; color:var(--text-muted); margin-top:8px;"></div>
  </div>
  </div>
  </div>
 
- <!-- MAIN DASHBOARD -->
- <div class="dashboard-main">
- <div class="tactical-banner" id="bannerCard">
- <div id="favoredTackTitle" class="banner-highlight">BORDO FAVOREVOLE: CLICCA RICALCOLA</div>
- <div id="bannerDetail" class="banner-sub">--</div>
-
- <!-- HERO DASHBOARD CONTAINER -->
- <div class="hero-target-card">
- <div class="hero-grid">
- <div class="hero-val-box">
- <div class="metric-lbl">🎯 Prua Prossimo Bordo</div>
- <div class="hero-mega-val" id="heroHdgWithLeeway">--°</div>
- <div class="hero-sub-val" id="heroHdgNoLeeway">COG/Track Target: --°</div>
- <div style="font-size:0.68rem; color:var(--text-muted); margin-top:4px;" id="heroLeewayNote">Prua bussola istantanea da timonare</div>
- </div>
-
- <div class="hero-val-box">
- <div class="metric-lbl" id="heroTargetHeader">🏁 Target Prossimo Bordo</div>
- <div class="hero-sub-val" id="heroTargetName" style="font-size:1.05rem; margin-top:2px;">--</div>
- <div style="font-size: 1.15rem; font-weight:800; color: #ffffff; margin-top:4px;" id="heroTargetCoords">--</div>
- <div style="font-size: 0.75rem; color: var(--cyan); margin-top:2px; font-weight:700;" id="heroTargetDistBrg">--</div>
- <div style="font-size: 0.78rem; color: var(--amber); margin-top:4px; font-weight:800;" id="heroStartLineDist">Dist. Linea: -- | TTL: --</div>
- <div style="font-size: 0.72rem; color: #38bdf8; margin-top:2px; font-weight:700;" id="heroLineBiasText">Line Bias: --</div>
- </div>
-
- <div class="hero-val-box timer-box timer-stopped" id="timerContainerBox">
- <div class="metric-lbl" id="lblTimerHeader">⏱️ Timer Regata</div>
- <div class="metric-val" id="valLiveTimer" style="font-size:1.6rem; font-weight:900; color:#ffffff; cursor:pointer;" onclick="editTimerManually()" title="Clicca per modificare il tempo a mano">00:00</div>
- <div style="font-size:0.85rem; font-weight:700; color:var(--cyan);" id="valSOG">SOG: -- kn</div>
- <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:4px;" id="lblTimerStatus">Pronto / Inattivo</div>
- 
- <!-- QUICK TIMER BUTTONS -->
- <div style="display:flex; gap:3px; justify-content:center; flex-wrap:wrap;">
- <button class="btn" style="padding:1px 5px; font-size:0.7rem;" onclick="adjustTimer(60)">+1m</button>
- <button class="btn" style="padding:1px 5px; font-size:0.7rem;" onclick="adjustTimer(-60)">-1m</button>
- <button class="btn" style="padding:1px 5px; font-size:0.7rem;" onclick="adjustTimer(10)">+10s</button>
- <button class="btn" style="padding:1px 5px; font-size:0.7rem;" onclick="adjustTimer(-10)">-10s</button>
- <button class="btn btn-cyan" style="padding:1px 5px; font-size:0.7rem; font-weight:bold;" onclick="syncTimer()">SYNC</button>
- </div>
- </div>
- </div>
- </div>
-
- <!-- SECONDARY STRATEGIC PLAN CARD -->
- <div class="secondary-plan-card">
- <div class="secondary-title">
- <span>📋 Scheda Prossimo Bordo & Punto Obiettivo Intermedio</span>
- <span style="color:var(--cyan);" id="lblTackTypeDetail">--</span>
- </div>
- <div class="metrics-grid">
- <div class="metric-box">
- <div class="metric-lbl">Prua Bordo</div>
- <div class="metric-val" id="valHdg1">--°</div>
- </div>
- <div class="metric-box">
- <div class="metric-lbl">Dist. Bordo</div>
- <div class="metric-val" id="valDist1">-- NM</div>
- </div>
- <div class="metric-box">
- <div class="metric-lbl">Tempo Bordo</div>
- <div class="metric-val" id="valTime1">-- min</div>
- </div>
- 
- <div class="metric-box coord-box">
- <div class="metric-lbl" id="lblLatManeuver">Lat Obiettivo Intermedio</div>
- <div class="metric-val amber" id="valLatTack">--</div>
- </div>
- <div class="metric-box coord-box">
- <div class="metric-lbl" id="lblLonManeuver">Lon Obiettivo Intermedio</div>
- <div class="metric-val amber" id="valLonTack">--</div>
- </div>
-
- <div class="metric-box">
- <div class="metric-lbl">⏱️ Tempo Tot. Matrice</div>
- <div class="metric-val" id="valTimeTotal">-- min</div>
- </div>
- <div class="metric-box">
- <div class="metric-lbl">📏 Dist. alla Boa</div>
- <div class="metric-val" id="valDistTotal">-- NM</div>
- </div>
- <div class="metric-box">
- <div class="metric-lbl">VMG Effettiva</div>
- <div class="metric-val" id="valVMG">-- kn</div>
- </div>
- </div>
- </div>
- </div>
-
- <div class="plot-row">
- <!-- CANVAS PLOTTER CARD -->
- <div class="card" style="padding:10px;">
- <div class="card-title" style="margin-bottom:8px;">
- <span id="plotterTitle">🗺️ Plotter Tattico & Matrice del Vento</span>
- <span style="font-size:0.75rem; color:var(--amber);" id="plotterModeLabel">Modalità Vista Partenza</span>
- </div>
- <div id="plotterContainer">
- <canvas id="tacticalCanvas"></canvas>
- <div id="windMatrixOverlay"></div>
- </div>
- </div>
-
- <!-- SAIL MATRIX CARD -->
- <div class="card">
- <div class="card-title">
- <span>⚙️ Raccomandazione Vele & Assetto</span>
- </div>
- <div class="sail-info-box">
- <div class="sail-card">
- <h4>Vela / Portante Consigliata</h4>
- <p id="recHeadsail">--</p>
- </div>
- <div class="sail-card">
- <h4>Randa & Trasto</h4>
- <p id="recMainsail">--</p>
- </div>
- <div class="sail-card">
- <h4>Inclinazione Target</h4>
- <p id="recHeel">--°</p>
- </div>
- </div>
- <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);" id="tacticalAdvice">
- 💡 <b>Consiglio Tattico:</b> Caricamento in corso...
- </div>
- </div>
- </div>
+ <div class="drawer-footer">
+ <button type="button" id="saveBtn" class="btn btn-green btn-block" onclick="manualSaveSettings()">💾 Salva Ora</button>
+ <button type="button" id="resetStorageBtn" class="btn btn-red btn-block" onclick="resetStoredSettings()">🗑️ Reset Dati</button>
  </div>
 </div>
 
+</body>
+
 <script>
+
  const STORAGE_KEY = 'tatticaRegataSettings_v2';
 
  const presets = {
@@ -873,12 +743,20 @@
 
  // --- SCHEDE PANNELLO LATERALE ---
  function showSideTab(name) {
- ['nav', 'campo', 'barca', 'vento'].forEach(n => {
+ ['posizione', 'campo', 'barca', 'vento'].forEach(n => {
  const pane = document.getElementById('pane-' + n);
  const tab = document.getElementById('tab-' + n);
  if (pane) pane.classList.toggle('active', n === name);
  if (tab) tab.classList.toggle('active', n === name);
  });
+ }
+
+ // --- CASSETTO IMPOSTAZIONI (fuori dal flusso di navigazione: aperto solo su richiesta) ---
+ function openSettings() {
+ document.body.classList.add('drawer-open');
+ }
+ function closeSettings() {
+ document.body.classList.remove('drawer-open');
  }
 
  const toRad = deg => deg * Math.PI / 180;
@@ -1298,22 +1176,23 @@
  const btnCard = document.getElementById('btnToggleMatrix');
  const btnHeader = document.getElementById('btnToggleMatrixHeader');
  const overlay = document.getElementById('windMatrixOverlay');
- 
- const labelText = windMatrixActive ? "❌ Chiudi Matrice" : "💨 Matrice del Vento";
- if (btnCard) btnCard.innerText = labelText;
- if (btnHeader) btnHeader.innerText = labelText;
- 
+
+ const labelText = windMatrixActive ? "❌" : "💨";
+ const titleText = windMatrixActive ? "Chiudi la matrice del vento" : "Aggiorna la matrice del vento";
+ if (btnCard) { btnCard.innerText = labelText; btnCard.title = titleText; }
+ if (btnHeader) { btnHeader.innerText = labelText; btnHeader.title = titleText; }
+
  if (windMatrixActive) {
- if (btnCard) btnCard.className = "btn btn-amber";
- if (btnHeader) btnHeader.className = "btn btn-amber";
+ if (btnCard) btnCard.className = "btn btn-amber icon-btn";
+ if (btnHeader) btnHeader.className = "btn btn-amber icon-btn";
  overlay.style.display = (currentViewMode === 'PARTENZA') ? 'none' : 'grid';   // in Vista Partenza la matrice non si mostra
  renderWindMatrixOverlay();
  } else {
- if (btnCard) btnCard.className = "btn btn-cyan";
- if (btnHeader) btnHeader.className = "btn btn-cyan";
+ if (btnCard) btnCard.className = "btn btn-cyan icon-btn";
+ if (btnHeader) btnHeader.className = "btn btn-cyan icon-btn";
  overlay.style.display = 'none';
  }
- 
+
  updateLiveStatus();
  }
 
@@ -1487,9 +1366,14 @@
  onStartLineChanged();
  }
 
- function toggleViewMode() {
- currentViewMode = (currentViewMode === 'PARTENZA') ? 'CAMPO' : 'PARTENZA';
+ function setViewMode(mode) {
+ if (currentViewMode === mode) return;
+ currentViewMode = mode;
  updateLiveStatus();
+ }
+
+ function toggleViewMode() {
+ setViewMode(currentViewMode === 'PARTENZA' ? 'CAMPO' : 'PARTENZA');
  }
 
  function onStartLineChanged() {
@@ -1740,7 +1624,7 @@
  const statusLbl = document.getElementById('lblTimerStatus');
  const headerLbl = document.getElementById('lblTimerHeader');
 
- box.className = "hero-val-box timer-box";
+ box.className = "timer-box";
 
  if (timerState === 'COUNTDOWN') {
  box.classList.add('timer-countdown');
@@ -1783,14 +1667,14 @@
  if (gpsWatchId !== null) {
  navigator.geolocation.clearWatch(gpsWatchId);
  gpsWatchId = null;
- btn.className = "btn btn-amber";
+ btn.className = "btn btn-amber btn-sm";
  btn.innerText = "📡 Attiva GPS Reale";
- document.getElementById('valSOG').innerText = "SOG: -- kn";
+ document.getElementById('valSOG').innerText = "-- kn";
  return;
  }
 
  if (navigator.geolocation) {
- btn.className = "btn btn-green";
+ btn.className = "btn btn-green btn-sm";
  btn.innerText = "🟢 GPS Attivo";
 
  gpsWatchId = navigator.geolocation.watchPosition(position => {
@@ -1805,9 +1689,9 @@
 
  if (position.coords.speed !== null && !isNaN(position.coords.speed)) {
  const sogKnots = (position.coords.speed * 1.94384).toFixed(1);
- document.getElementById('valSOG').innerText = `SOG: ${sogKnots} kn`;
+ document.getElementById('valSOG').innerText = `${sogKnots} kn`;
  } else {
- document.getElementById('valSOG').innerText = "SOG: 0.0 kn";
+ document.getElementById('valSOG').innerText = "0.0 kn";
  }
 
  requestRecalc(300);
@@ -2222,18 +2106,18 @@
  }
 
  function applyViewModeUI(mode) {
- const viewBtn = document.getElementById('viewModeToggleBtn');
+ const btnP = document.getElementById('btnViewPartenza');
+ const btnC = document.getElementById('btnViewCampo');
  const plotterModeLbl = document.getElementById('plotterModeLabel');
  const plotterTitle = document.getElementById('plotterTitle');
  const heroHeader = document.getElementById('heroTargetHeader');
- const heroStartLineEl = document.getElementById('heroStartLineDist');
- const heroLineBiasEl = document.getElementById('heroLineBiasText');
+ const startLineBlock = document.getElementById('startLineBlock');
 
  const isPartenza = (mode === 'PARTENZA');
 
- if (viewBtn) {
- viewBtn.className = isPartenza ? "btn btn-gold" : "btn btn-cyan";
- viewBtn.innerText = isPartenza ? "🏁 Vista Partenza" : "🗺️ Vista Campo";
+ if (btnP && btnC) {
+ btnP.classList.toggle('active', isPartenza);
+ btnC.classList.toggle('active', !isPartenza);
  }
 
  if (plotterModeLbl) {
@@ -2248,8 +2132,9 @@
  if (heroHeader) {
  heroHeader.innerText = isPartenza ? "🏁 Linea Partenza & Distanza" : "🎯 Target Attuale";
  }
- if (heroStartLineEl) heroStartLineEl.style.display = isPartenza ? "" : "none";
- if (heroLineBiasEl) heroLineBiasEl.style.display = isPartenza ? "" : "none";
+ // In Vista Campo la linea di partenza non è pertinente: il blocco resta nel DOM (i suoi valori
+ // continuano ad aggiornarsi) ma non occupa spazio nella scheda del prossimo obiettivo.
+ if (startLineBlock) startLineBlock.style.display = isPartenza ? "" : "none";
  }
 
  function clearPlotter() {
@@ -2337,9 +2222,16 @@
  const roundedHdgWithLeeway = Math.round(plan.hdgNext);
  const roundedBrgNoLeeway = Math.round(brgToCurTarget);
 
- document.getElementById('heroHdgWithLeeway').innerHTML = `${roundedHdgWithLeeway}° <span style="font-size:0.9rem; color:var(--cyan); font-weight:normal;">(Prua Prossimo Bordo)</span>`;
+ document.getElementById('heroHdgWithLeeway').innerText = `${roundedHdgWithLeeway}°`;
  document.getElementById('heroHdgNoLeeway').innerText = `Rilevamento BRG Target: ${roundedBrgNoLeeway}°`;
  document.getElementById('heroLeewayNote').innerText = leewayCorrectionText;
+
+ // Etichetta compatta della mura: sempre visibile, evita di ripetere "MURE A ..." in più punti della pagina.
+ const tackBadge = document.getElementById('tackBadge');
+ if (tackBadge) {
+ tackBadge.textContent = plan.tackSide > 0 ? 'Mure a Dritta' : 'Mure a Sinistra';
+ tackBadge.classList.toggle('port', plan.tackSide <= 0);
+ }
 
  document.getElementById('heroTargetName').innerText = curTargetName;
  document.getElementById('heroTargetCoords').innerText = `${curTargetLat.toFixed(4)}° N, ${curTargetLon.toFixed(4)}° E`;
@@ -2361,20 +2253,17 @@
 
  const timeNext = (plan.stwEff > 0) ? (distToCurTarget / plan.stwEff) * 60 : 0;
  // Uso il tempo reale dell'ottimizzatore per la VMG finale
- const timeTotalMatrice = plan.totalRoutingTime * 60; 
+ const timeTotalMatrice = plan.totalRoutingTime * 60;
  const vmgNet = (timeTotalMatrice > 0) ? (plan.distDirect / (timeTotalMatrice / 60)) : 0;
 
- document.getElementById('lblTackTypeDetail').innerText = plan.tackLabel;
- document.getElementById('valHdg1').innerText = `${Math.round(plan.hdgNext)}°`;
- document.getElementById('valDist1').innerText = `${distToCurTarget.toFixed(2)} NM`;
  document.getElementById('valTime1').innerText = formatDuration(timeNext);
-
- document.getElementById('valLatTack').innerText = plan.interLat.toFixed(4);
- document.getElementById('valLonTack').innerText = plan.interLon.toFixed(4);
-
  document.getElementById('valTimeTotal').innerText = formatDuration(timeTotalMatrice);
  document.getElementById('valDistTotal').innerText = `${plan.distDirect.toFixed(2)} NM`;
  document.getElementById('valVMG').innerText = `${vmgNet.toFixed(2)} kn`;
+
+ // Velocità stimata dal modello polare per il bordo attuale, da confrontare con il SOG del GPS.
+ const stwEstEl = document.getElementById('valSTWEst');
+ if (stwEstEl) stwEstEl.innerText = `${plan.stwEff.toFixed(2)} kn`;
 
  updateSailsMatrix(boatName, plan.tws, plan.isUpwind);
  drawTacticalMap(plan, curLat, curLon, hdgBoatInput, lineCtx);
@@ -2791,5 +2680,4 @@
  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(updateLiveStatus, 200); });
  };
 </script>
-</body>
 </html>
