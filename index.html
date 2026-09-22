@@ -529,14 +529,6 @@ body.drawer-open .drawer { transform: translateX(0); }
  </div>
  </div>
  </div>
-
- <div class="card">
- <div class="card-title"><span>💨 Condizioni Vento Base</span></div>
- <div class="form-row">
- <div class="form-group"><label>Direzione Vento (Globale) (°)</label><input type="number" id="twd" value="10" min="0" max="359" onchange="updateGlobalWind()"></div>
- <div class="form-group"><label>Intensità Vento (Globale) (kn)</label><input type="number" id="tws" value="10" min="1" max="50" onchange="updateGlobalWind()"></div>
- </div>
- </div>
  </div>
 
  <!-- CAMPO -->
@@ -658,6 +650,14 @@ body.drawer-open .drawer { transform: translateX(0); }
  <!-- VENTO -->
  <div class="side-pane" id="pane-vento">
  <div class="card">
+ <div class="card-title"><span>💨 Condizioni Vento Base</span></div>
+ <div class="form-row">
+ <div class="form-group"><label>Direzione Vento (Globale) (°)</label><input type="number" id="twd" value="10" min="0" max="359" onchange="updateGlobalWind()"></div>
+ <div class="form-group"><label>Intensità Vento (Globale) (kn)</label><input type="number" id="tws" value="10" min="1" max="50" onchange="updateGlobalWind()"></div>
+ </div>
+ </div>
+
+ <div class="card">
  <div class="card-title">
  <span>💨 Matrice del Vento</span>
  <span class="badge" style="background:#1e293b; color:var(--cyan)">Meteo Locale</span>
@@ -670,7 +670,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div class="form-group"><label>Colonne (n, max 9)</label><input type="number" id="matrixColsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()"></div>
  </div>
  <div style="display:flex; gap:6px; margin-top:4px;">
- <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="fitWindBoxToCourse(true)" title="Ricalcola il riquadro geografico da boe e linea di partenza">📐 Adatta al campo</button>
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="fitWindBoxToCourse(true)" title="Ricentra e ridimensiona subito il riquadro su barca, boe e linea di partenza">📐 Adatta al campo</button>
  <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="resetMatrixToBase()" title="Azzera le differenze tra le celle">↺ Uniforma</button>
  </div>
  <div id="matrixBoxInfo" style="font-size:0.72rem; color:var(--text-muted); margin-top:8px;"></div>
@@ -2240,17 +2240,37 @@ body.drawer-open .drawer { transform: translateX(0); }
  document.getElementById('heroTargetDistBrg').innerText = `Dist Bordo: ${distToCurTarget.toFixed(2)} NM | BRG: ${roundedBrgNoLeeway}°`;
 
  const titleEl = document.getElementById('favoredTackTitle');
+ const bannerDetailEl = document.getElementById('bannerDetail');
  const manovraText = plan.isUpwind ? "VIRATA" : "ABBATTUTA";
+ const isPartenza = (plan.viewMode === 'PARTENZA');
 
  if (selectedLegState === 'ARRIVO') {
  titleEl.innerHTML = `STATO REGATA: <span style="color:var(--green)">ARRIVO COMPLETATO 🏁</span>`;
- document.getElementById('bannerDetail').innerHTML = `Navigazione conclusa per Boa ${plan.targetMark}. Tempo congelato.`;
+ bannerDetailEl.innerHTML = `Navigazione conclusa per Boa ${plan.targetMark}. Tempo congelato.`;
+ } else if (isPartenza) {
+ // In Vista Partenza la chiamata riguarda la LINEA (bias, OCS, tempo al via), non il bordo dopo
+ // il via: quella tattica non è ancora attuale e ripeterla qui creava un messaggio scoordinato
+ // rispetto alla scheda "Linea Partenza & Distanza" mostrata subito sotto.
+ const a = lineCtx && lineCtx.analysis;
+ if (!a) {
+ titleEl.innerHTML = `LINEA DI PARTENZA: <span style="color:var(--text-muted)">DATI INCOMPLETI</span>`;
+ bannerDetailEl.innerHTML = `Inserisci le coordinate di giuria e boa Pin (scheda Campo) per calcolare il bias della linea.`;
+ } else if (a.isOCS) {
+ titleEl.innerHTML = `LINEA DI PARTENZA: <span style="color:var(--red)">⚠️ SEI OLTRE LINEA (OCS)</span>`;
+ bannerDetailEl.innerHTML = `Torna indietro e riattraversa la linea prima del segnale di partenza, oppure rischi la squalifica.`;
+ } else if (a.biasType === 'NEUTRALE') {
+ titleEl.innerHTML = `LINEA DI PARTENZA: <span style="color:#38bdf8">NEUTRALE</span>`;
+ bannerDetailEl.innerHTML = `Nessun lato favorito (0°) | Dist. linea ${a.distMeters} m | Tempo al via ${a.ttlText}`;
+ } else {
+ titleEl.innerHTML = `LINEA DI PARTENZA: <span style="color:var(--gold)">${a.biasType}</span>`;
+ bannerDetailEl.innerHTML = `Vantaggio +${a.advantageMeters} m (${Math.abs(Math.round(a.diffBias))}°) | Dist. linea ${a.distMeters} m | Tempo al via ${a.ttlText}`;
+ }
  } else if (!plan.needsSecondLeg) {
  titleEl.innerHTML = `ROTTA DIRETTA: <span style="color:var(--green)">VERSO LA BOA ${plan.targetMark}</span>`;
- document.getElementById('bannerDetail').innerHTML = `Navigazione diretta verso Boa ${plan.targetMark} (${plan.distDirect.toFixed(2)} NM) | Vento Base ${plan.tws.toFixed(1)} kn`;
+ bannerDetailEl.innerHTML = `Navigazione diretta verso Boa ${plan.targetMark} (${plan.distDirect.toFixed(2)} NM) | Vento Base ${plan.tws.toFixed(1)} kn`;
  } else {
  titleEl.innerHTML = `BORDO OTTIMIZZATO (Matrice): <span style="color:var(--cyan)">${plan.tackLabel} (PRUA: ${roundedHdgWithLeeway}°)</span>`;
- document.getElementById('bannerDetail').innerHTML = `Raggiungi il punto obiettivo (calcolato sulle raffiche e salti di vento) per effettuare la <b>${manovraText}</b> verso Boa ${plan.targetMark}`;
+ bannerDetailEl.innerHTML = `Raggiungi il punto obiettivo (calcolato sulle raffiche e salti di vento) per effettuare la <b>${manovraText}</b> verso Boa ${plan.targetMark}`;
  }
 
  const timeNext = (plan.stwEff > 0) ? (distToCurTarget / plan.stwEff) * 60 : 0;
