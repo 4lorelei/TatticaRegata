@@ -306,8 +306,9 @@ body.drawer-open .drawer { transform: translateX(0); }
 /* ---------- Layout a due colonne su tablet orizzontale / desktop ---------- */
 @media (min-width: 1000px) {
  .info-row { flex-direction: row; align-items: flex-start; }
- .dashboard-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
- .dashboard-row .plotter-card { margin: 0; }
+ .dashboard-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 12px; align-items: stretch; }
+ .dashboard-row .plotter-card { margin: 0; display: flex; flex-direction: column; }
+ .dashboard-row #plotterContainer { flex: 1; height: auto; min-height: clamp(360px, 62vh, 620px); }
  .side-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
  .info-row.side-col-inner { flex-direction: column; }
 }
@@ -341,7 +342,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  <!-- CHIAMATA TATTICA -->
  <div class="call-strip">
  <div class="call-strip-text">
- <div id="favoredTackTitle">BORDO FAVOREVOLE: CLICCA RICALCOLA</div>
+ <div id="favoredTackTitle">STATO ROTTA: CLICCA RICALCOLA</div>
  <div id="bannerDetail">--</div>
  </div>
  <button type="button" id="btnArrivo" class="btn btn-green btn-sm" onclick="setLegState('ARRIVO')">🏁 Arrivo / Congela</button>
@@ -410,11 +411,11 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div class="card-title"><span>⏱️ Velocità & Timer</span></div>
 
  <div class="speed-duo">
- <div class="speed-box stw">
- <div class="lbl">Stimata (STW)</div>
+ <div class="speed-box stw" title="Velocità attesa dalla polare nel vento del punto/settore in cui ti trovi ora">
+ <div class="lbl">Attesa Ora (STW)</div>
  <div class="val" id="valSTWEst">-- kn</div>
  </div>
- <div class="speed-box sog">
+ <div class="speed-box sog" title="Velocità reale sul fondo, da GPS">
  <div class="lbl">GPS (SOG)</div>
  <div class="val" id="valSOG">-- kn</div>
  </div>
@@ -2087,6 +2088,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  hdgNext: st0.hdg,
  distNext: leg1.dist,
  stwEff: leg1.avgStw,
+ stwLocal: st0.stw,   // velocità attesa dalla polare nel vento del punto/settore attuale (non mediata sul bordo)
  needsSecondLeg: needsSecondLeg,
  isUpwind: st0.twaH < 90,
  favoredTack: favoredTack,
@@ -2244,7 +2246,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  titleEl.innerHTML = `STATO REGATA: <span style="color:var(--green)">ARRIVO COMPLETATO 🏁</span>`;
  document.getElementById('bannerDetail').innerHTML = `Navigazione conclusa per Boa ${plan.targetMark}. Tempo congelato.`;
  } else if (!plan.needsSecondLeg) {
- titleEl.innerHTML = `BORDO FAVOREVOLE: <span style="color:var(--green)">ROTTA DIRETTA ALLA BOA ${plan.targetMark}</span>`;
+ titleEl.innerHTML = `ROTTA DIRETTA: <span style="color:var(--green)">VERSO LA BOA ${plan.targetMark}</span>`;
  document.getElementById('bannerDetail').innerHTML = `Navigazione diretta verso Boa ${plan.targetMark} (${plan.distDirect.toFixed(2)} NM) | Vento Base ${plan.tws.toFixed(1)} kn`;
  } else {
  titleEl.innerHTML = `BORDO OTTIMIZZATO (Matrice): <span style="color:var(--cyan)">${plan.tackLabel} (PRUA: ${roundedHdgWithLeeway}°)</span>`;
@@ -2261,9 +2263,11 @@ body.drawer-open .drawer { transform: translateX(0); }
  document.getElementById('valDistTotal').innerText = `${plan.distDirect.toFixed(2)} NM`;
  document.getElementById('valVMG').innerText = `${vmgNet.toFixed(2)} kn`;
 
- // Velocità stimata dal modello polare per il bordo attuale, da confrontare con il SOG del GPS.
+ // Velocità stimata dal modello polare nel vento del settore/punto ATTUALE (non mediata sul bordo):
+ // dà un confronto immediato con il SOG del GPS, per capire se si sta guadagnando o perdendo
+ // rispetto alle previsioni proprio ora, invece di una media che mescola settori non ancora raggiunti.
  const stwEstEl = document.getElementById('valSTWEst');
- if (stwEstEl) stwEstEl.innerText = `${plan.stwEff.toFixed(2)} kn`;
+ if (stwEstEl) stwEstEl.innerText = `${plan.stwLocal.toFixed(2)} kn`;
 
  updateSailsMatrix(boatName, plan.tws, plan.isUpwind);
  drawTacticalMap(plan, curLat, curLon, hdgBoatInput, lineCtx);
@@ -2423,13 +2427,17 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
 
  function tagOffset(m, nx, ny) {
- return Math.abs(nx) * m.w / 2 + Math.abs(ny) * m.h / 2 + 10;
+ const gap = 8;
+ return {
+ dx: nx ? (m.w / 2 + gap) : 0,
+ dy: ny ? (m.h / 2 + gap) : 0
+ };
  }
 
  function drawTag(ctx, ax, ay, lines, color, W, H, nx = 0, ny = 0) {
  const m = measureTag(ctx, lines);
- const d = (nx || ny) ? tagOffset(m, nx, ny) : 0;
- const { bx, by } = clampTag(ax + nx * d, ay + ny * d, m.w, m.h, W, H);
+ const off = (nx || ny) ? tagOffset(m, nx, ny) : { dx: 0, dy: 0 };
+ const { bx, by } = clampTag(ax + nx * off.dx, ay + ny * off.dy, m.w, m.h, W, H);
 
  ctx.fillStyle = 'rgba(7, 13, 25, 0.88)';
  ctx.strokeStyle = color;
@@ -2659,8 +2667,6 @@ body.drawer-open .drawer { transform: translateX(0); }
  ctx.lineWidth = 1;
  ctx.stroke();
  ctx.restore();
-
- drawTag(ctx, cB.x, cB.y, ["TU"], '#ffffff', W, H, -1, 1);
  }
 
  window.onload = () => {
