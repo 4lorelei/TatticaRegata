@@ -466,7 +466,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div class="metric-val" id="valDistTotal">-- NM</div>
  </div>
  <div class="metric-box">
- <div class="metric-lbl">VMG Effettiva</div>
+ <div class="metric-lbl" title="Calcolata dal modello (distanza diretta / tempo totale stimato dal piano di rotta), non misurata dal GPS">VMG Stimata</div>
  <div class="metric-val green" id="valVMG">-- kn</div>
  </div>
  </div>
@@ -2357,19 +2357,19 @@ body.drawer-open .drawer { transform: translateX(0); }
  if (tws < 8) {
  mainsail = "Randa piena, trasto leggermente sopravvento, base lasca";
  heel = "8° - 11°";
- advice = `${boatName}: Favorire la velocità stazzando l'equipaggio sottovento.`;
+ advice = `Favorire la velocità stazzando l'equipaggio sottovento.`;
  } else if (tws <= 13) {
  mainsail = "Randa piena, trasto al centro, cunningham puntato";
  heel = "14° - 16°";
- advice = `${boatName}: Assetto ottimale per VMG.`;
+ advice = `Assetto ottimale per VMG.`;
  } else if (tws <= 17) {
  mainsail = "1a Mano Terzaroli, cunningham teso, scaricare trasto nelle raffiche";
  heel = "17° - 19°";
- advice = `${boatName}: Scaricare randa per contenere lo sbandamento.`;
+ advice = `Scaricare randa per contenere lo sbandamento.`;
  } else {
  mainsail = "2a Mano Terzaroli, cunningham cazzato a ferro, trasto sottovento";
  heel = "20° - 22°";
- advice = `${boatName}: Controllare l'orza e la stabilità.`;
+ advice = `Controllare l'orza e la stabilità.`;
  }
 
  document.getElementById('recHeadsail').innerText = headsail;
