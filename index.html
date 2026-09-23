@@ -613,7 +613,12 @@ body.drawer-open .drawer { transform: translateX(0); }
  </select>
  </div>
  </div>
- <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">La condizione carica valori di partenza realistici e aggiorna il vento base. Con altro vento la polare si adatta da sola.</div>
+ <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px;">
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="addNewBoat()" title="Crea una nuova barca partendo dal modello scelto">➕ Nuova</button>
+ <button type="button" id="btnBoatRestore" class="btn btn-block" style="font-size:0.72rem;" onclick="restoreBoatFactory()" title="Ripristina i valori di fabbrica del modello">↺ Ripristina</button>
+ <button type="button" id="btnBoatDelete" class="btn btn-block" style="font-size:0.72rem;" onclick="deleteBoat()" title="Elimina la barca personalizzata">🗑️ Elimina</button>
+ </div>
+ <div style="font-size:0.7rem; color:var(--text-muted); margin-top:6px;">Le modifiche ai valori si salvano sul dispositivo per barca e condizione. Con altro vento la polare si adatta da sola.</div>
  <select id="presetSelector" onchange="applyBoatPreset()" style="display:none">
  <optgroup label="Dufour 31">
  <option value="dufour4">Dufour 31 - Molto Leggero (4 kn)</option>
@@ -667,21 +672,21 @@ body.drawer-open .drawer { transform: translateX(0); }
  <span class="badge" style="background:#1e293b; color:var(--amber)">Polare Target</span>
  </div>
  <div class="form-row">
- <div class="form-group"><label>Nome barca</label><input type="text" id="boatName" value="Dufour 31" onchange="updateLiveStatus()"></div>
- <div class="form-group"><label>Velocità Bolina (kn)</label><input type="number" id="targetSTW" value="5.0" step="0.1" onchange="requestRecalc()"></div>
+ <div class="form-group"><label>Nome barca</label><input type="text" id="boatName" value="Dufour 31" onchange="onBoatNameEdited()"></div>
+ <div class="form-group"><label>Velocità Bolina (kn)</label><input type="number" id="targetSTW" value="5.0" step="0.1" onchange="onBoatValueEdited()"></div>
  </div>
  <div class="form-row">
- <div class="form-group"><label>Velocità Poppa (kn)</label><input type="number" id="targetSTWDown" value="4.8" step="0.1" onchange="requestRecalc()"></div>
- <div class="form-group"><label>Angolo Bolina Target (°)</label><input type="number" id="targetTWA" value="44" step="1" onchange="requestRecalc()"></div>
+ <div class="form-group"><label>Velocità Poppa (kn)</label><input type="number" id="targetSTWDown" value="4.8" step="0.1" onchange="onBoatValueEdited()"></div>
+ <div class="form-group"><label>Angolo Bolina Target (°)</label><input type="number" id="targetTWA" value="44" step="1" onchange="onBoatValueEdited()"></div>
  </div>
  <div class="form-row">
- <div class="form-group"><label>Angolo Poppa Target (°)</label><input type="number" id="targetTWADown" value="165" step="1" onchange="requestRecalc()"></div>
- <div class="form-group"><label>Scarroccio Stimato (°)</label><input type="number" id="leeway" value="6" step="1" onchange="requestRecalc()"></div>
+ <div class="form-group"><label>Angolo Poppa Target (°)</label><input type="number" id="targetTWADown" value="165" step="1" onchange="onBoatValueEdited()"></div>
+ <div class="form-group"><label>Scarroccio Stimato (°)</label><input type="number" id="leeway" value="6" step="1" onchange="onBoatValueEdited()"></div>
  </div>
  <div class="form-row">
  <div class="form-group">
  <label>Velocità traverso (kn, opz.)</label>
- <input type="number" id="targetSTWReach" placeholder="auto" min="0" step="0.1" onchange="requestRecalc()">
+ <input type="number" id="targetSTWReach" placeholder="auto" min="0" step="0.1" onchange="onBoatValueEdited()">
  </div>
  <div style="font-size:0.7rem; color:var(--text-muted); align-self:end; padding-bottom:6px;">
  Vuota = stimata dalla bolina.
@@ -925,7 +930,7 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  const data = JSON.parse(saved);
 
- if (data.presetSelector) document.getElementById('presetSelector').value = data.presetSelector;
+ if (data.presetSelector && presets[data.presetSelector]) document.getElementById('presetSelector').value = data.presetSelector;
  if (data.boatName) document.getElementById('boatName').value = data.boatName;
  if (data.targetSTW) document.getElementById('targetSTW').value = data.targetSTW;
  if (data.targetSTWDown) document.getElementById('targetSTWDown').value = data.targetSTWDown;
@@ -1027,6 +1032,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  function resetStoredSettings() {
  if (confirm("Sei sicuro di voler ripristinare le impostazioni predefinite ed eliminare tutti i dati salvati?")) {
  localStorage.removeItem(STORAGE_KEY);
+ if ((boatLib.boats.length || Object.keys(boatLib.overrides).length) && confirm("Eliminare anche le barche create e i valori polare modificati?")) localStorage.removeItem(BOAT_LIB_KEY);
  location.reload();
  }
  }
@@ -1969,6 +1975,8 @@ body.drawer-open .drawer { transform: translateX(0); }
  document.getElementById('targetTWA').value = p.twaUp;
  document.getElementById('targetTWADown').value = p.twaDown;
  document.getElementById('leeway').value = p.leeway;
+ const rf = document.getElementById('targetSTWReach');
+ if (rf) rf.value = p.stwReach ? p.stwReach.toFixed(1) : '';
  document.getElementById('tws').value = p.tws;
  updateGlobalWind();
  recalculateRoutePlan();
@@ -2000,11 +2008,12 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
 
  function parsePresetKey(key) {
- for (const m of BOAT_MODELS) {
+ const ms = BOAT_MODELS.slice().sort((a, b) => b.key.length - a.key.length);
+ for (const m of ms) {
  if (key.indexOf(m.key) === 0) {
  let rest = key.slice(m.key.length);
  if (rest.charAt(0) === '_') rest = rest.slice(1);
- return { model: m.key, cond: rest };
+ if (WIND_CONDITIONS.some(c => c.key === rest)) return { model: m.key, cond: rest };
  }
  }
  return null;
@@ -2042,6 +2051,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
  lastAppliedBoatModel = model;
  renderPolarRefTable(model, cond);
+ updateBoatButtons();
  }
 
  // Allinea i due selettori visibili (e la tabella) al preset attualmente attivo: usata all'avvio e
@@ -2055,6 +2065,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  if (condSel) condSel.value = parsed.cond;
  lastAppliedBoatModel = parsed.model;
  renderPolarRefTable(parsed.model, parsed.cond);
+ updateBoatButtons();
  }
 
  function alignHeadingToRoute() {
@@ -2099,17 +2110,180 @@ body.drawer-open .drawer { transform: translateX(0); }
  const MIN_LEG_NM = 0.03;          // sotto questa lunghezza un bordo non è un bordo reale
  const LEG_SAMPLE_NM = 0.08;       // passo di integrazione del tempo lungo il bordo
 
- const POLAR_TABLES = (() => {
+ let POLAR_TABLES = {};
+ // Raggruppa i preset per modello (le condizioni di una stessa barca) e li ordina per intensità di vento.
+ function rebuildPolarTables() {
  const t = {};
- Object.keys(presets).forEach(k => { const p = presets[k]; (t[p.name] = t[p.name] || []).push(p); });
+ Object.keys(presets).forEach(k => { const pk = parsePresetKey(k); if (pk) (t[pk.model] = t[pk.model] || []).push(presets[k]); });
  Object.values(t).forEach(a => a.sort((x, y) => x.tws - y.tws));
- return t;
- })();
+ POLAR_TABLES = t;
+ }
 
  function getPolarFamily() {
  const sel = document.getElementById('presetSelector');
- const p = presets[sel ? sel.value : ''];
- return (p && POLAR_TABLES[p.name]) ? p.name : Object.keys(POLAR_TABLES)[0];
+ const pk = sel ? parsePresetKey(sel.value) : null;
+ return (pk && POLAR_TABLES[pk.model]) ? pk.model : Object.keys(POLAR_TABLES)[0];
+ }
+
+ // ---------- LIBRERIA BARCHE (salvata sul dispositivo, chiave separata dalle impostazioni) ----------
+ // overrides: valori modificati dei modelli di serie, per chiave preset. boats: barche create dall'utente.
+ const BOAT_LIB_KEY = 'tatticaRegataBoats_v1';
+ const BUILTIN_PRESETS = JSON.parse(JSON.stringify(presets));
+ const BUILTIN_MODELS = BOAT_MODELS.slice();
+ const PRESET_FIELDS = ['stwUp', 'twaUp', 'stwDown', 'twaDown', 'leeway'];
+ let boatLib = { overrides: {}, boats: [] };
+ rebuildPolarTables();
+
+ function escHtml(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+ // Solo campi numerici validi (stwReach opzionale).
+ function sanitizePreset(o) {
+ if (!o || typeof o !== 'object') return null;
+ const r = {};
+ for (const f of PRESET_FIELDS) { const v = Number(o[f]); if (!Number.isFinite(v) || v < 0) return null; r[f] = v; }
+ if (r.stwUp <= 0 || r.stwDown <= 0) return null;
+ const rv = Number(o.stwReach);
+ if (Number.isFinite(rv) && rv > 0) r.stwReach = rv;
+ return r;
+ }
+
+ function saveBoatLibrary() {
+ try { localStorage.setItem(BOAT_LIB_KEY, JSON.stringify(boatLib)); }
+ catch (e) { console.warn('Impossibile salvare le barche:', e); }
+ }
+
+ // Riparte dai valori di fabbrica e applica overrides e barche personali.
+ function applyBoatLibrary() {
+ Object.keys(presets).forEach(k => { if (!BUILTIN_PRESETS[k]) delete presets[k]; });
+ Object.keys(BUILTIN_PRESETS).forEach(k => {
+ presets[k] = Object.assign({}, BUILTIN_PRESETS[k], sanitizePreset(boatLib.overrides[k]) || {});
+ });
+ BOAT_MODELS.length = 0;
+ BUILTIN_MODELS.forEach(m => BOAT_MODELS.push(m));
+ boatLib.boats.forEach(b => {
+ BOAT_MODELS.push({ key: b.id, label: b.name });
+ WIND_CONDITIONS.forEach(c => { presets[presetKeyFor(b.id, c.key)] = Object.assign({ name: b.name, tws: Number(c.key) }, b.conds[c.key]); });
+ });
+ rebuildPolarTables();
+ }
+
+ function loadBoatLibrary() {
+ try {
+ const d = JSON.parse(localStorage.getItem(BOAT_LIB_KEY) || 'null');
+ if (d && typeof d === 'object') {
+ if (d.overrides && typeof d.overrides === 'object') boatLib.overrides = d.overrides;
+ if (Array.isArray(d.boats)) {
+ boatLib.boats = d.boats.filter(b => b && /^u_[a-z0-9]+$/.test(b.id) && typeof b.name === 'string' && b.conds &&
+ WIND_CONDITIONS.every(c => sanitizePreset(b.conds[c.key])));
+ }
+ }
+ } catch (e) { console.warn('Libreria barche non leggibile:', e); }
+ applyBoatLibrary();
+ rebuildBoatSelectors();
+ }
+
+ // Selettore modelli visibile + selettore preset nascosto (contiene solo la chiave attiva).
+ function rebuildBoatSelectors() {
+ const ms = document.getElementById('boatModelSelector'), ps = document.getElementById('presetSelector');
+ if (ms) {
+ const cur = ms.value;
+ ms.innerHTML = BOAT_MODELS.map(m => `<option value="${escHtml(m.key)}">${escHtml(m.label)}</option>`).join('');
+ if (BOAT_MODELS.some(m => m.key === cur)) ms.value = cur;
+ }
+ if (ps) {
+ const cur = ps.value;
+ ps.innerHTML = Object.keys(presets).map(k => `<option value="${escHtml(k)}">${escHtml(k)}</option>`).join('');
+ if (presets[cur]) ps.value = cur;
+ }
+ updateBoatButtons();
+ }
+
+ function currentBoatModel() {
+ const pk = parsePresetKey(document.getElementById('presetSelector').value);
+ return pk ? pk.model : null;
+ }
+ function currentCustomBoat() { const m = currentBoatModel(); return boatLib.boats.find(b => b.id === m) || null; }
+
+ function updateBoatButtons() {
+ const custom = !!currentCustomBoat();
+ const rb = document.getElementById('btnBoatRestore'), db = document.getElementById('btnBoatDelete');
+ if (rb) { rb.disabled = custom; rb.style.opacity = custom ? '0.4' : ''; }
+ if (db) { db.disabled = !custom; db.style.opacity = custom ? '' : '0.4'; }
+ }
+
+ // Ogni modifica ai valori viene memorizzata per barca e condizione.
+ function onBoatValueEdited() {
+ const key = document.getElementById('presetSelector').value, p = presets[key], pk = parsePresetKey(key);
+ if (p && pk) {
+ const num = id => parseFloat(document.getElementById(id).value);
+ const v = sanitizePreset({ stwUp: num('targetSTW'), stwDown: num('targetSTWDown'), twaUp: num('targetTWA'), twaDown: num('targetTWADown'), leeway: num('leeway'), stwReach: num('targetSTWReach') });
+ if (v) {
+ PRESET_FIELDS.forEach(f => { p[f] = v[f]; });
+ if (v.stwReach) p.stwReach = v.stwReach; else delete p.stwReach;
+ const boat = boatLib.boats.find(b => b.id === pk.model);
+ if (boat) boat.conds[pk.cond] = v; else boatLib.overrides[key] = v;
+ saveBoatLibrary();
+ rebuildPolarTables();
+ renderPolarRefTable(pk.model, pk.cond);
+ }
+ }
+ requestRecalc();
+ }
+
+ // Per le barche personali, il nome barca rinomina la barca.
+ function onBoatNameEdited() {
+ const boat = currentCustomBoat(), nm = document.getElementById('boatName').value.trim().slice(0, 40);
+ if (boat && nm) {
+ boat.name = nm;
+ saveBoatLibrary();
+ applyBoatLibrary();
+ rebuildBoatSelectors();
+ document.getElementById('boatModelSelector').value = boat.id;
+ }
+ updateLiveStatus();
+ }
+
+ // Nuova barca: parte dai valori del modello attualmente scelto (tutte le condizioni), poi si modifica.
+ function addNewBoat() {
+ const src = currentBoatModel() || 'dufour';
+ let name = (prompt('Nome della nuova barca:', '') || '').trim().slice(0, 40);
+ if (!name) return;
+ const taken = new Set(BOAT_MODELS.map(m => m.label));
+ if (taken.has(name)) { let n = 2; while (taken.has(name + ' (' + n + ')')) n++; name += ' (' + n + ')'; }
+ const conds = {};
+ WIND_CONDITIONS.forEach(c => { conds[c.key] = sanitizePreset(presets[presetKeyFor(src, c.key)]); });
+ const id = 'u_' + Date.now().toString(36);
+ boatLib.boats.push({ id, name, conds });
+ saveBoatLibrary();
+ applyBoatLibrary();
+ rebuildBoatSelectors();
+ document.getElementById('boatModelSelector').value = id;
+ lastAppliedBoatModel = null;
+ onBoatModelOrConditionChanged();
+ }
+
+ function deleteBoat() {
+ const boat = currentCustomBoat();
+ if (!boat || !confirm('Eliminare la barca "' + boat.name + '" dal dispositivo?')) return;
+ boatLib.boats = boatLib.boats.filter(b => b.id !== boat.id);
+ saveBoatLibrary();
+ applyBoatLibrary();
+ rebuildBoatSelectors();
+ document.getElementById('boatModelSelector').value = 'dufour';
+ lastAppliedBoatModel = null;
+ onBoatModelOrConditionChanged();
+ }
+
+ // Modello di serie: annulla le modifiche salvate e torna ai valori di fabbrica.
+ function restoreBoatFactory() {
+ const m = currentBoatModel();
+ if (!m || currentCustomBoat() || !confirm('Ripristinare i valori di fabbrica di questo modello?')) return;
+ Object.keys(boatLib.overrides).forEach(k => { const pk = parsePresetKey(k); if (pk && pk.model === m) delete boatLib.overrides[k]; });
+ saveBoatLibrary();
+ applyBoatLibrary();
+ rebuildBoatSelectors();
+ lastAppliedBoatModel = null;
+ onBoatModelOrConditionChanged();
  }
 
  function tableAt(family, tws) {
@@ -3091,6 +3265,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
 
  window.onload = () => {
+ loadBoatLibrary();
  if (!loadSettings()) {
  initWindMatrix();
  renderMarksUI();
