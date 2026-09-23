@@ -571,40 +571,87 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div class="side-pane" id="pane-barca">
  <div class="card">
  <div class="card-title">
- <span>⛵ Preset & Dati Imbarcazione</span>
- <span class="badge" style="background:#1e293b; color:var(--cyan)">Polare Target</span>
+ <span>⛵ Modello Barca</span>
+ <span class="badge" style="background:#1e293b; color:var(--cyan)">Polare</span>
  </div>
- <div class="form-group" style="margin-bottom:10px;">
- <label>Preset Barca / Vento</label>
- <select id="presetSelector" onchange="applyBoatPreset()">
+ <div class="form-row">
+ <div class="form-group">
+ <label>Modello</label>
+ <select id="boatModelSelector" onchange="onBoatModelOrConditionChanged()">
+ <option value="dufour">Dufour 31</option>
+ <option value="first30">First 30 (1978)</option>
+ <option value="j24">J/24</option>
+ <option value="comet910">Comet 910</option>
+ </select>
+ </div>
+ <div class="form-group">
+ <label>Condizione di riferimento</label>
+ <select id="windConditionSelector" onchange="onBoatModelOrConditionChanged()">
+ <option value="4">Molto Leggero (4 kn)</option>
+ <option value="6">Leggero (6 kn)</option>
+ <option value="10" selected>Medio (10 kn)</option>
+ <option value="14">Sostenuto (14 kn)</option>
+ <option value="18">Forte (18 kn)</option>
+ </select>
+ </div>
+ </div>
+ <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">
+ Il modello resta lo stesso: sceglierlo non dipende dal vento, definisce solo di che barca si tratta. La "condizione di riferimento" serve solo per caricare qui sotto valori di partenza realistici — nel farlo aggiorna anche il vento base (scheda Vento), così i numeri restano coerenti tra loro. Con vento diverso da quello scelto, il motore di rotta adatta comunque già da sé le prestazioni: vedi la conferma più sotto.
+ </div>
+ <select id="presetSelector" onchange="applyBoatPreset()" style="display:none">
  <optgroup label="Dufour 31">
+ <option value="dufour4">Dufour 31 - Molto Leggero (4 kn)</option>
  <option value="dufour6">Dufour 31 - Brezza Leggera (6 kn)</option>
  <option value="dufour10" selected>Dufour 31 - Vento Medio (10 kn)</option>
  <option value="dufour14">Dufour 31 - Vento Sostenuto (14 kn)</option>
  <option value="dufour18">Dufour 31 - Vento Forte (18 kn)</option>
  </optgroup>
  <optgroup label="First 30 (1978)">
+ <option value="first30_4">First 30 - Molto Leggero (4 kn)</option>
  <option value="first30_6">First 30 - Brezza Leggera (6 kn)</option>
  <option value="first30_10">First 30 - Vento Medio (10 kn)</option>
  <option value="first30_14">First 30 - Vento Sostenuto (14 kn)</option>
  <option value="first30_18">First 30 - Vento Forte (18 kn)</option>
  </optgroup>
  <optgroup label="J/24">
+ <option value="j24_4">J/24 - Molto Leggero (4 kn)</option>
  <option value="j24_6">J/24 - Brezza Leggera (6 kn)</option>
  <option value="j24_10">J/24 - Vento Medio (10 kn)</option>
  <option value="j24_14">J/24 - Vento Sostenuto (14 kn)</option>
  <option value="j24_18">J/24 - Vento Forte (18 kn)</option>
  </optgroup>
  <optgroup label="Comet 910">
+ <option value="comet910_4">Comet 910 - Molto Leggero (4 kn)</option>
  <option value="comet910_6">Comet 910 - Brezza Leggera (6 kn)</option>
  <option value="comet910_10">Comet 910 - Vento Medio (10 kn)</option>
  <option value="comet910_14">Comet 910 - Vento Sostenuto (14 kn)</option>
  <option value="comet910_18">Comet 910 - Vento Forte (18 kn)</option>
  </optgroup>
  </select>
+
+ <div style="margin-top:12px; overflow-x:auto;">
+ <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Parametri del modello in tutte le condizioni (riga evidenziata = condizione attiva):</div>
+ <table id="polarRefTable" style="width:100%; border-collapse:collapse; font-size:0.7rem; white-space:nowrap;">
+ <thead>
+ <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid var(--border);">
+ <th style="padding:3px 6px;">Condizione</th>
+ <th style="padding:3px 6px;">Bolina</th>
+ <th style="padding:3px 6px;">Poppa</th>
+ <th style="padding:3px 6px;">Scarroccio</th>
+ </tr>
+ </thead>
+ <tbody><!-- generata via JS: renderPolarRefTable() --></tbody>
+ </table>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-title">
+ <span>📐 Valori di Riferimento (modificabili)</span>
+ <span class="badge" style="background:#1e293b; color:var(--amber)">Polare Target</span>
  </div>
  <div class="form-row">
- <div class="form-group"><label>Modello Barca</label><input type="text" id="boatName" value="Dufour 31" onchange="updateLiveStatus()"></div>
+ <div class="form-group"><label>Nome Barca (personalizzabile)</label><input type="text" id="boatName" value="Dufour 31" onchange="updateLiveStatus()"></div>
  <div class="form-group"><label>Velocità Bolina (kn)</label><input type="number" id="targetSTW" value="5.0" step="0.1" onchange="requestRecalc()"></div>
  </div>
  <div class="form-row">
@@ -691,21 +738,25 @@ body.drawer-open .drawer { transform: translateX(0); }
  const STORAGE_KEY = 'tatticaRegataSettings_v2';
 
  const presets = {
+ 'dufour4': { name: "Dufour 31", stwUp: 3.0, twaUp: 50, stwDown: 3.0, twaDown: 130, leeway: 10, tws: 4 },
  'dufour6': { name: "Dufour 31", stwUp: 3.8, twaUp: 48, stwDown: 3.8, twaDown: 145, leeway: 8, tws: 6 },
  'dufour10': { name: "Dufour 31", stwUp: 5.0, twaUp: 44, stwDown: 4.8, twaDown: 165, leeway: 6, tws: 10 },
  'dufour14': { name: "Dufour 31", stwUp: 5.6, twaUp: 43, stwDown: 5.5, twaDown: 170, leeway: 5, tws: 14 },
  'dufour18': { name: "Dufour 31", stwUp: 5.9, twaUp: 42, stwDown: 5.8, twaDown: 175, leeway: 4, tws: 18 },
 
+ 'first30_4': { name: "First 30 (1978)", stwUp: 3.3, twaUp: 48, stwDown: 3.2, twaDown: 132, leeway: 9, tws: 4 },
  'first30_6': { name: "First 30 (1978)", stwUp: 4.0, twaUp: 46, stwDown: 4.0, twaDown: 145, leeway: 7, tws: 6 },
  'first30_10': { name: "First 30 (1978)", stwUp: 5.2, twaUp: 43, stwDown: 5.0, twaDown: 165, leeway: 5, tws: 10 },
  'first30_14': { name: "First 30 (1978)", stwUp: 5.8, twaUp: 42, stwDown: 5.7, twaDown: 170, leeway: 4, tws: 14 },
  'first30_18': { name: "First 30 (1978)", stwUp: 6.1, twaUp: 41, stwDown: 6.0, twaDown: 175, leeway: 4, tws: 18 },
 
+ 'j24_4': { name: "J/24", stwUp: 3.6, twaUp: 47, stwDown: 3.6, twaDown: 128, leeway: 8, tws: 4 },
  'j24_6': { name: "J/24", stwUp: 4.2, twaUp: 45, stwDown: 4.3, twaDown: 140, leeway: 6, tws: 6 },
  'j24_10': { name: "J/24", stwUp: 5.4, twaUp: 42, stwDown: 5.3, twaDown: 160, leeway: 4, tws: 10 },
  'j24_14': { name: "J/24", stwUp: 6.0, twaUp: 40, stwDown: 6.1, twaDown: 165, leeway: 3, tws: 14 },
  'j24_18': { name: "J/24", stwUp: 6.3, twaUp: 39, stwDown: 6.5, twaDown: 170, leeway: 3, tws: 18 },
 
+ 'comet910_4': { name: "Comet 910", stwUp: 3.5, twaUp: 48, stwDown: 3.4, twaDown: 130, leeway: 9, tws: 4 },
  'comet910_6': { name: "Comet 910", stwUp: 4.1, twaUp: 46, stwDown: 4.0, twaDown: 145, leeway: 7, tws: 6 },
  'comet910_10': { name: "Comet 910", stwUp: 5.3, twaUp: 43, stwDown: 5.1, twaDown: 165, leeway: 5, tws: 10 },
  'comet910_14': { name: "Comet 910", stwUp: 5.9, twaUp: 42, stwDown: 5.8, twaDown: 170, leeway: 4, tws: 14 },
@@ -1723,6 +1774,87 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
  }
 
+ // --- MODELLO BARCA vs CONDIZIONE DI RIFERIMENTO ---
+ // Il "modello" (che barca è) e la "condizione" (con che vento sono tarati i valori di riferimento)
+ // sono scelte concettualmente diverse, ma internamente restano un'unica chiave di presets{} come prima:
+ // questi helper traducono le due scelte visibili nella chiave giusta, senza toccare la logica esistente.
+ const BOAT_MODELS = [
+ { key: 'dufour', label: 'Dufour 31' },
+ { key: 'first30', label: 'First 30 (1978)' },
+ { key: 'j24', label: 'J/24' },
+ { key: 'comet910', label: 'Comet 910' }
+ ];
+ const WIND_CONDITIONS = [
+ { key: '4', label: 'Molto Leggero (4 kn)' },
+ { key: '6', label: 'Leggero (6 kn)' },
+ { key: '10', label: 'Medio (10 kn)' },
+ { key: '14', label: 'Sostenuto (14 kn)' },
+ { key: '18', label: 'Forte (18 kn)' }
+ ];
+ let lastAppliedBoatModel = null;
+
+ function presetKeyFor(modelKey, condKey) {
+ return (modelKey === 'dufour') ? (modelKey + condKey) : (modelKey + '_' + condKey);
+ }
+
+ function parsePresetKey(key) {
+ for (const m of BOAT_MODELS) {
+ if (key.indexOf(m.key) === 0) {
+ let rest = key.slice(m.key.length);
+ if (rest.charAt(0) === '_') rest = rest.slice(1);
+ return { model: m.key, cond: rest };
+ }
+ }
+ return null;
+ }
+
+ // Tabella di sola lettura: mostra i parametri del modello scelto in TUTTE le condizioni di vento,
+ // evidenziando quella attualmente in uso, così è chiaro cosa cambia (e cosa NON cambia) tra le andature.
+ function renderPolarRefTable(modelKey, activeCond) {
+ const tbody = document.querySelector('#polarRefTable tbody');
+ if (!tbody) return;
+ tbody.innerHTML = WIND_CONDITIONS.map(c => {
+ const p = presets[presetKeyFor(modelKey, c.key)];
+ if (!p) return '';
+ const active = (c.key === activeCond);
+ return `<tr${active ? ' style="background:rgba(6,182,212,0.18); font-weight:700;"' : ''}>
+ <td>${c.label}</td><td>${p.stwUp.toFixed(1)} kn @ ${p.twaUp}°</td><td>${p.stwDown.toFixed(1)} kn @ ${p.twaDown}°</td><td>${p.leeway}°</td>
+ </tr>`;
+ }).join('');
+ }
+
+ // Cambiare MODELLO aggiorna anche il nome barca (coerente col nuovo modello). Cambiare solo la
+ // CONDIZIONE non deve invece sovrascrivere un nome personalizzato che l'utente avesse già scritto.
+ function onBoatModelOrConditionChanged() {
+ const model = document.getElementById('boatModelSelector').value;
+ const cond = document.getElementById('windConditionSelector').value;
+ const key = presetKeyFor(model, cond);
+ if (!presets[key]) return;
+ document.getElementById('presetSelector').value = key;
+
+ const prevName = document.getElementById('boatName').value;
+ const modelChanged = (model !== lastAppliedBoatModel);
+ applyBoatPreset();
+ if (!modelChanged && prevName) {
+ document.getElementById('boatName').value = prevName;
+ }
+ lastAppliedBoatModel = model;
+ renderPolarRefTable(model, cond);
+ }
+
+ // Allinea i due selettori visibili (e la tabella) al preset attualmente attivo: usata all'avvio e
+ // dopo il ripristino di un salvataggio, quando presetSelector viene impostato senza passare da qui.
+ function syncModelConditionSelectorsFromPreset() {
+ const parsed = parsePresetKey(document.getElementById('presetSelector').value);
+ if (!parsed) return;
+ const modelSel = document.getElementById('boatModelSelector');
+ const condSel = document.getElementById('windConditionSelector');
+ if (modelSel) modelSel.value = parsed.model;
+ if (condSel) condSel.value = parsed.cond;
+ lastAppliedBoatModel = parsed.model;
+ renderPolarRefTable(parsed.model, parsed.cond);
+ }
+
  function alignHeadingToRoute() {
  if (currentRoutePlan && currentRoutePlan.hdgNext !== undefined) {
  document.getElementById('hdgBoat').value = Math.round(currentRoutePlan.hdgNext);
@@ -2695,6 +2827,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  renderMarksUI();
  applyBoatPreset();
  }
+ syncModelConditionSelectorsFromPreset();
  const sel = document.getElementById('targetMarkSelect');
  if (sel && !sel.value && marks[0]) sel.value = marks[0].id;   // prima esecuzione: boa obiettivo predefinita
  if (!windGridBox) fitWindBoxToCourse(false);
