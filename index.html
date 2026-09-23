@@ -354,7 +354,6 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div id="favoredTackTitle">STATO ROTTA: CLICCA RICALCOLA</div>
  <div id="bannerDetail">--</div>
  </div>
- <button type="button" id="btnArrivo" class="btn btn-green btn-sm" onclick="setLegState('ARRIVO')">🏁 Arrivo / Congela</button>
  </div>
 
  <div class="dashboard-row">
@@ -411,7 +410,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  </div>
 
  <div class="start-line-block" id="startLineBlock">
- <div id="heroStartLineDist">Dist. Linea: -- | TTL: --</div>
+ <div id="heroStartLineDist">Dist. Linea: -- | Tempo alla linea: --</div>
  <div id="heroLineBiasText">Line Bias: --</div>
  </div>
  </div>
@@ -453,7 +452,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  <option value="60">1 Minuto</option>
  </select>
  <button type="button" id="timerStartBtn" class="btn btn-amber btn-sm" onclick="startStartSequence()">▶️ Avvia</button>
- <button type="button" id="timerStopBtn" class="btn btn-red btn-sm" onclick="stopRegattaTimer()">⏹️ Stop</button>
+ <button type="button" id="timerStopBtn" class="btn btn-red btn-sm" onclick="stopOrArrivo()" title="Durante il conto alla rovescia interrompe la sequenza; dopo il via registra l'arrivo">⏹️ Stop</button>
  <button type="button" class="btn btn-sm" onclick="resetTimer()">🔄 Azzera</button>
  </div>
  </div>
@@ -534,7 +533,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  </div>
  <div class="form-group">
  <label>Stato Regata</label>
- <div style="font-size:0.78rem; color:var(--text-muted); padding-top:6px;">Usa "Arrivo / Congela" sulla chiamata tattica in alto.</div>
+ <div style="font-size:0.78rem; color:var(--text-muted); padding-top:6px;">Avvia / Stop-Arrivo si trovano nel riquadro Velocità & Timer.</div>
  </div>
  </div>
  </div>
@@ -1591,15 +1590,21 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
 
  function startStartSequence() {
+ // Regata in corso: Avvia non deve trasformare il tempo trascorso in un conto alla rovescia
+ if (timerState === 'RACING' && !confirm("Regata in corso. Vuoi avviare una nuova sequenza di partenza?")) return;
+ const newRace = (timerState === 'RACING' || (timerState === 'STOPPED' && selectedLegState === 'ARRIVO'));
  if (timerInterval) clearInterval(timerInterval);
  
  const initialVal = parseInt(document.getElementById('startTimerSelect').value);
- if (timerSeconds <= 0 || timerState === 'IDLE' || timerState === 'STOPPED') {
+ if (timerSeconds <= 0 || timerState === 'IDLE' || timerState === 'STOPPED' || timerState === 'RACING') {
  timerSeconds = initialVal;
  }
  timerState = 'COUNTDOWN';
+ selectedLegState = 'RUNNING';            // nuova regata: si azzera lo stato "ARRIVO"
+ if (newRace && currentViewMode !== 'PARTENZA') currentViewMode = 'PARTENZA';   // la nuova partenza riparte dalla linea
  
  updateTimerUI();
+ updateLiveStatus();
 
  timerInterval = setInterval(() => {
  if (timerState === 'COUNTDOWN') {
@@ -1608,6 +1613,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  if (timerSeconds <= 0) {
  timerState = 'RACING';
  timerSeconds = 0;
+ updateLiveStatus();   // dopo il via l'avviso OCS non è più pertinente
  }
  } else if (timerState === 'RACING') {
  // gara: il tempo avanza
@@ -1667,6 +1673,14 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
  timerState = 'STOPPED';
  updateTimerUI();
+ updateLiveStatus();
+ }
+
+ // Pulsante contestuale: durante il conto alla rovescia interrompe la sequenza (richiamo/rinvio),
+ // dopo il via registra l'arrivo e ferma il tempo.
+ function stopOrArrivo() {
+ if (timerState === 'RACING') setLegState('ARRIVO');
+ else if (timerState === 'COUNTDOWN') stopRegattaTimer();
  }
 
  function resetTimer() {
@@ -1676,10 +1690,22 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
  timerState = 'IDLE';
  timerSeconds = 0;
+ selectedLegState = 'RUNNING';
  updateTimerUI();
+ updateLiveStatus();
  }
 
  function updateTimerUI() {
+ const stopBtn = document.getElementById('timerStopBtn');
+ if (stopBtn) {
+ const racing = (timerState === 'RACING');
+ const active = racing || timerState === 'COUNTDOWN';
+ stopBtn.innerText = racing ? "🏁 Arrivo" : "⏹️ Stop";
+ stopBtn.classList.toggle('btn-green', racing);
+ stopBtn.classList.toggle('btn-red', !racing);
+ stopBtn.disabled = !active;
+ stopBtn.style.opacity = active ? "" : "0.4";
+ }
  const box = document.getElementById('timerContainerBox');
  const timerEl = document.getElementById('valLiveTimer');
  const statusLbl = document.getElementById('lblTimerStatus');
@@ -1701,10 +1727,11 @@ body.drawer-open .drawer { transform: translateX(0); }
  statusLbl.innerText = "Tempo Regata Attivo";
  } else if (timerState === 'STOPPED') {
  box.classList.add('timer-stopped');
- headerLbl.innerText = "⏹️ Regata Conclusa";
+ const arrived = (selectedLegState === 'ARRIVO');
+ headerLbl.innerText = arrived ? "🏁 Regata Conclusa" : "⏹️ Sequenza Interrotta";
  timerEl.style.color = "var(--cyan)";
  timerEl.innerText = formatClockTime(timerSeconds);
- statusLbl.innerText = "Tempo Congelato";
+ statusLbl.innerText = arrived ? "Tempo finale - Avvia per una nuova regata" : "Timer fermo - Avvia per ripartire";
  } else {
  box.classList.add('timer-stopped');
  headerLbl.innerText = "⏱️ Timer Regata";
@@ -2324,10 +2351,13 @@ body.drawer-open .drawer { transform: translateX(0); }
  const lineAnalysis = getStartLineAnalysis(curLat, curLon, latGiuria, lonGiuria, latPin, lonPin, lineWind.twd, stwVal, hdgBoatInput);
  lineCtx = { latGiuria, lonGiuria, latPin, lonPin, analysis: lineAnalysis };
 
- let ocsText = lineAnalysis.isOCS ? " [⚠️ OCS / OLTRE LINEA!]" : "";
+ const ocsAlarm = lineAnalysis.isOCS && timerState === 'COUNTDOWN';   // OCS conta solo prima del via
+ let ocsText = "";
+ if (ocsAlarm) ocsText = " [⚠️ OCS / OLTRE LINEA!]";
+ else if (lineAnalysis.isOCS && timerState !== 'RACING') ocsText = " [sopravento alla linea]";
  if (heroStartLineEl) {
- heroStartLineEl.innerText = `Lunghezza Linea: ${lineAnalysis.lineLenMeters} m | Dist. Barca: ${lineAnalysis.distMeters} m | TTL: ${lineAnalysis.ttlText}${ocsText}`;
- heroStartLineEl.style.color = lineAnalysis.isOCS ? "var(--red)" : "var(--amber)";
+ heroStartLineEl.innerText = `Lunghezza Linea: ${lineAnalysis.lineLenMeters} m | Dist. Barca: ${lineAnalysis.distMeters} m | Tempo alla linea: ${lineAnalysis.ttlText}${ocsText}`;
+ heroStartLineEl.style.color = ocsAlarm ? "var(--red)" : "var(--amber)";
  }
 
  if (heroLineBiasEl) {
@@ -2387,7 +2417,7 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  if (selectedLegState === 'ARRIVO') {
  titleEl.innerHTML = `STATO REGATA: <span style="color:var(--green)">ARRIVO COMPLETATO 🏁</span>`;
- bannerDetailEl.innerHTML = `Navigazione conclusa per Boa ${plan.targetMark}. Tempo congelato.`;
+ bannerDetailEl.innerHTML = `Navigazione conclusa per Boa ${plan.targetMark}. Tempo finale ${formatClockTime(timerSeconds)}. Premi Avvia per una nuova regata.`;
  } else if (isPartenza) {
  // In Vista Partenza la chiamata riguarda la LINEA (bias, OCS, tempo al via), non il bordo dopo
  // il via: quella tattica non è ancora attuale e ripeterla qui creava un messaggio scoordinato
@@ -2396,15 +2426,15 @@ body.drawer-open .drawer { transform: translateX(0); }
  if (!a) {
  titleEl.innerHTML = `LINEA DI PARTENZA: <span style="color:var(--text-muted)">DATI INCOMPLETI</span>`;
  bannerDetailEl.innerHTML = `Inserisci le coordinate di giuria e boa Pin (scheda Campo) per calcolare il bias della linea.`;
- } else if (a.isOCS) {
+ } else if (a.isOCS && timerState === 'COUNTDOWN') {
  titleEl.innerHTML = `LINEA DI PARTENZA: <span style="color:var(--red)">⚠️ SEI OLTRE LINEA (OCS)</span>`;
  bannerDetailEl.innerHTML = `Torna indietro e riattraversa la linea prima del segnale di partenza, oppure rischi la squalifica.`;
  } else if (a.biasType === 'NEUTRALE') {
  titleEl.innerHTML = `LINEA DI PARTENZA: <span style="color:#38bdf8">NEUTRALE</span>`;
- bannerDetailEl.innerHTML = `Nessun lato favorito (0°) | Dist. linea ${a.distMeters} m | Tempo al via ${a.ttlText}`;
+ bannerDetailEl.innerHTML = `Nessun lato favorito (0°) | Dist. linea ${a.distMeters} m | Tempo alla linea ${a.ttlText}`;
  } else {
  titleEl.innerHTML = `LINEA DI PARTENZA: <span style="color:var(--gold)">${a.biasType}</span>`;
- bannerDetailEl.innerHTML = `Vantaggio +${a.advantageMeters} m (${Math.abs(Math.round(a.diffBias))}°) | Dist. linea ${a.distMeters} m | Tempo al via ${a.ttlText}`;
+ bannerDetailEl.innerHTML = `Vantaggio +${a.advantageMeters} m (${Math.abs(Math.round(a.diffBias))}°) | Dist. linea ${a.distMeters} m | Tempo alla linea ${a.ttlText}`;
  }
  } else if (!plan.needsSecondLeg) {
  titleEl.innerHTML = `ROTTA DIRETTA: <span style="color:var(--green)">VERSO LA BOA ${plan.targetMark}</span>`;
