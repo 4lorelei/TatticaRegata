@@ -613,9 +613,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  </select>
  </div>
  </div>
- <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">
- Il modello resta lo stesso: sceglierlo non dipende dal vento, definisce solo di che barca si tratta. La "condizione di riferimento" serve solo per caricare qui sotto valori di partenza realistici — nel farlo aggiorna anche il vento base (scheda Vento), così i numeri restano coerenti tra loro. Con vento diverso da quello scelto, il motore di rotta adatta comunque già da sé le prestazioni: vedi la conferma più sotto.
- </div>
+ <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">La condizione carica valori di partenza realistici e aggiorna il vento base. Con altro vento la polare si adatta da sola.</div>
  <select id="presetSelector" onchange="applyBoatPreset()" style="display:none">
  <optgroup label="Dufour 31">
  <option value="dufour4">Dufour 31 - Molto Leggero (4 kn)</option>
@@ -648,7 +646,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  </select>
 
  <div style="margin-top:12px; overflow-x:auto;">
- <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Parametri del modello in tutte le condizioni (riga evidenziata = condizione attiva):</div>
+ <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Parametri per condizione (evidenziata = attiva):</div>
  <table id="polarRefTable" style="width:100%; border-collapse:collapse; font-size:0.7rem; white-space:nowrap;">
  <thead>
  <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid var(--border);">
@@ -669,7 +667,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  <span class="badge" style="background:#1e293b; color:var(--amber)">Polare Target</span>
  </div>
  <div class="form-row">
- <div class="form-group"><label>Nome Barca (personalizzabile)</label><input type="text" id="boatName" value="Dufour 31" onchange="updateLiveStatus()"></div>
+ <div class="form-group"><label>Nome barca</label><input type="text" id="boatName" value="Dufour 31" onchange="updateLiveStatus()"></div>
  <div class="form-group"><label>Velocità Bolina (kn)</label><input type="number" id="targetSTW" value="5.0" step="0.1" onchange="requestRecalc()"></div>
  </div>
  <div class="form-row">
@@ -682,11 +680,11 @@ body.drawer-open .drawer { transform: translateX(0); }
  </div>
  <div class="form-row">
  <div class="form-group">
- <label>Velocità Traverso 90° (kn, opz.)</label>
+ <label>Velocità traverso (kn, opz.)</label>
  <input type="number" id="targetSTWReach" placeholder="auto" min="0" step="0.1" onchange="requestRecalc()">
  </div>
  <div style="font-size:0.7rem; color:var(--text-muted); align-self:end; padding-bottom:6px;">
- Se vuota: stimata dalla bolina. Inseriscila se conosci la polare reale.
+ Vuota = stimata dalla bolina.
  </div>
  </div>
  </div>
@@ -717,27 +715,24 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div class="card">
  <div class="card-title"><span>🌊 Corrente Base</span></div>
  <div class="form-row">
- <div class="form-group"><label>Direzione Corrente (verso cui va) (°)</label><input type="number" id="curDir" value="0" min="0" max="359" onchange="updateGlobalCurrent()"></div>
- <div class="form-group"><label>Intensità Corrente (kn)</label><input type="number" id="curKn" value="0" min="0" max="8" step="0.1" onchange="updateGlobalCurrent()"></div>
+ <div class="form-group"><label>Direzione verso cui va (°)</label><input type="number" id="curDir" value="0" min="0" max="359" onchange="updateGlobalCurrent()"></div>
+ <div class="form-group"><label>Intensità (kn)</label><input type="number" id="curKn" value="0" min="0" max="8" step="0.1" onchange="updateGlobalCurrent()"></div>
  </div>
- <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">Attenzione: la direzione è quella verso cui l'acqua scorre (per il vento invece si indica la provenienza). Con 0 kn la corrente non influisce sul calcolo.</div>
+ <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">0 kn = corrente ignorata.</div>
  </div>
  <div class="card">
- <div class="card-title">
- <span>🌊 Matrice della Corrente</span>
- <span class="badge" style="background:#1e293b; color:var(--cyan)">Locale</span>
- </div>
- <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">
- Come per il vento: modifica le celle sul plotter (vista Campo). Mostra una matrice alla volta: aprendo la corrente si nasconde quella del vento. Il riquadro geografico è lo stesso del vento (si adatta dalla scheda Vento), ma righe e colonne sono indipendenti: ad esempio 5×5 per il vento e 3×3 per la corrente. Cambiando la corrente base l'intero campo si sposta mantenendo le differenze.
- </div>
+ <div class="card-title"><span>🌊 Matrice della Corrente</span></div>
+ <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">Modifica le celle sul plotter (vista Campo). Cambiando i valori base si sposta l'intero campo.</div>
  <div class="form-row">
- <div class="form-group"><label>Righe (m, max 9)</label><input type="number" id="curRowsInput" value="3" min="1" max="9" onchange="updateCurrentDimensions()"></div>
- <div class="form-group"><label>Colonne (n, max 9)</label><input type="number" id="curColsInput" value="3" min="1" max="9" onchange="updateCurrentDimensions()"></div>
+ <div class="form-group"><label>Righe (max 9)</label><input type="number" id="curRowsInput" value="3" min="1" max="9" onchange="updateCurrentDimensions()"></div>
+ <div class="form-group"><label>Colonne (max 9)</label><input type="number" id="curColsInput" value="3" min="1" max="9" onchange="updateCurrentDimensions()"></div>
  </div>
- <div style="display:flex; gap:6px;">
- <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="openMatrixEdit('CURRENT'); closeSettings();">🌊 Modifica sul plotter</button>
+ <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:4px;">
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="openMatrixEdit('CURRENT'); closeSettings();" title="Apri la modifica sul plotter">✏️ Modifica</button>
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="fitWindBoxToCourse(true)" title="Ricentra il riquadro (comune a vento e corrente) su barca, boe e linea">📐 Adatta</button>
  <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="resetCurrentToBase()" title="Azzera le differenze tra le celle">↺ Uniforma</button>
  </div>
+ <div id="curBoxInfo" style="font-size:0.72rem; color:var(--text-muted); margin-top:8px;"></div>
  </div>
  </div>
 
@@ -746,25 +741,21 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div class="card">
  <div class="card-title"><span>💨 Condizioni Vento Base</span></div>
  <div class="form-row">
- <div class="form-group"><label>Direzione Vento (Globale) (°)</label><input type="number" id="twd" value="10" min="0" max="359" onchange="updateGlobalWind()"></div>
- <div class="form-group"><label>Intensità Vento (Globale) (kn)</label><input type="number" id="tws" value="10" min="1" max="50" onchange="updateGlobalWind()"></div>
+ <div class="form-group"><label>Provenienza (°)</label><input type="number" id="twd" value="10" min="0" max="359" onchange="updateGlobalWind()"></div>
+ <div class="form-group"><label>Intensità (kn)</label><input type="number" id="tws" value="10" min="1" max="50" onchange="updateGlobalWind()"></div>
  </div>
  </div>
 
  <div class="card">
- <div class="card-title">
- <span>💨 Matrice del Vento</span>
- <span class="badge" style="background:#1e293b; color:var(--cyan)">Meteo Locale</span>
- </div>
- <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">
- Il pulsante 💨 sopra il plotter apre la matrice per modificarla durante la navigazione. Qui si configurano righe/colonne e si adatta il riquadro.
- </div>
+ <div class="card-title"><span>💨 Matrice del Vento</span></div>
+ <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">Modifica le celle sul plotter (vista Campo). Cambiando i valori base si sposta l'intero campo.</div>
  <div class="form-row">
- <div class="form-group"><label>Righe (m, max 9)</label><input type="number" id="matrixRowsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()"></div>
- <div class="form-group"><label>Colonne (n, max 9)</label><input type="number" id="matrixColsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()"></div>
+ <div class="form-group"><label>Righe (max 9)</label><input type="number" id="matrixRowsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()"></div>
+ <div class="form-group"><label>Colonne (max 9)</label><input type="number" id="matrixColsInput" value="3" min="1" max="9" onchange="updateMatrixDimensions()"></div>
  </div>
- <div style="display:flex; gap:6px; margin-top:4px;">
- <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="fitWindBoxToCourse(true)" title="Ricentra e ridimensiona subito il riquadro su barca, boe e linea di partenza">📐 Adatta al campo</button>
+ <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:4px;">
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="openMatrixEdit('WIND'); closeSettings();" title="Apri la modifica sul plotter">✏️ Modifica</button>
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="fitWindBoxToCourse(true)" title="Ricentra il riquadro (comune a vento e corrente) su barca, boe e linea">📐 Adatta</button>
  <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="resetMatrixToBase()" title="Azzera le differenze tra le celle">↺ Uniforma</button>
  </div>
  <div id="matrixBoxInfo" style="font-size:0.72rem; color:var(--text-muted); margin-top:8px;"></div>
@@ -1182,6 +1173,8 @@ body.drawer-open .drawer { transform: translateX(0); }
  html += `<br><span style="color:var(--amber)">⚠️ Boa ${fuori.join(', ')} fuori dal riquadro: lì vale il vento del bordo. Usa “Adatta riquadro al campo”.</span>`;
  }
  el.innerHTML = html;
+ const ec = document.getElementById('curBoxInfo');
+ if (ec) ec.innerHTML = `Riquadro condiviso col vento, celle da ${(ew / curCols).toFixed(2)} × ${(ns / curRows).toFixed(2)} NM.`;
  }
 
  // Campionatore bilineare su coordinate normalizzate u (ovest→est) e v (nord→sud), entrambe in [0,1].
@@ -1371,6 +1364,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
  curRows = newRows; curCols = newCols;
  curSpdGrid = nS; curDirGrid = nD;
+ updateMatrixBoxInfo();
  if (windMatrixActive) renderWindMatrixOverlay();
  updateLiveStatus();
  requestRecalc();
