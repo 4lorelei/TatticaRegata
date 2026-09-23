@@ -392,7 +392,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  🟣 <i>Viola</i>: Meno vento rispetto alla base<br>
  🟢 <i>Verde</i>: Più vento rispetto alla base<br>
  ⬇️ <i>Freccia</i>: Direzione in cui soffia il vento<br>
- 📍 Le celle sono ancorate alle coordinate del campo, non allo schermo: il vento è interpolato tra i centri delle celle. Cambiare TWD/TWS base sposta tutto il campo mantenendo le differenze.<br>🌊 <i>Corrente</i>: il pulsante 🌊 sostituisce la vista del vento con quella della corrente (freccia = direzione verso cui scorre, valore in nodi). Righe, colonne e riquadro sono gli stessi della matrice del vento.
+ 📍 Le celle sono ancorate alle coordinate del campo, non allo schermo: il vento è interpolato tra i centri delle celle. Cambiare TWD/TWS base sposta tutto il campo mantenendo le differenze.<br>🌊 <i>Corrente</i>: il pulsante 🌊 sostituisce la vista del vento con quella della corrente (freccia = direzione verso cui scorre, valore in nodi). Ha righe e colonne proprie; il riquadro geografico è lo stesso del vento.
  </div>
  </details>
  </div>
@@ -728,7 +728,11 @@ body.drawer-open .drawer { transform: translateX(0); }
  <span class="badge" style="background:#1e293b; color:var(--cyan)">Locale</span>
  </div>
  <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">
- Come per il vento: modifica le celle sul plotter (vista Campo). Mostra una matrice alla volta: aprendo la corrente si nasconde quella del vento. Righe, colonne e riquadro si impostano nella scheda Vento; cambiando la corrente base l'intero campo si sposta mantenendo le differenze.
+ Come per il vento: modifica le celle sul plotter (vista Campo). Mostra una matrice alla volta: aprendo la corrente si nasconde quella del vento. Il riquadro geografico è lo stesso del vento (si adatta dalla scheda Vento), ma righe e colonne sono indipendenti: ad esempio 5×5 per il vento e 3×3 per la corrente. Cambiando la corrente base l'intero campo si sposta mantenendo le differenze.
+ </div>
+ <div class="form-row">
+ <div class="form-group"><label>Righe (m, max 9)</label><input type="number" id="curRowsInput" value="3" min="1" max="9" onchange="updateCurrentDimensions()"></div>
+ <div class="form-group"><label>Colonne (n, max 9)</label><input type="number" id="curColsInput" value="3" min="1" max="9" onchange="updateCurrentDimensions()"></div>
  </div>
  <div style="display:flex; gap:6px;">
  <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="openMatrixEdit('CURRENT'); closeSettings();">🌊 Modifica sul plotter</button>
@@ -824,6 +828,8 @@ body.drawer-open .drawer { transform: translateX(0); }
  let curSpdGrid = [];             // corrente: intensità (kn) per cella
  let curDirGrid = [];             // corrente: direzione VERSO CUI scorre (°)
  let baseCurRef = null;
+ let curRows = 3;                // dimensioni della matrice della corrente: indipendenti da quelle del vento
+ let curCols = 3;
  let windMatrixGrid = [];
  let windDirMatrixGrid = [];
  let windGridBox = null;   // riquadro geografico a cui è ancorata la matrice {latMin, latMax, lonMin, lonMax}
@@ -898,6 +904,8 @@ body.drawer-open .drawer { transform: translateX(0); }
  baseWindRef: baseWindRef,
  curDir: document.getElementById('curDir').value,
  curKn: document.getElementById('curKn').value,
+ curRows: curRows,
+ curCols: curCols,
  curSpdGrid: curSpdGrid,
  curDirGrid: curDirGrid,
  baseCurRef: baseCurRef,
@@ -983,6 +991,10 @@ body.drawer-open .drawer { transform: translateX(0); }
  if (Array.isArray(data.curSpdGrid)) curSpdGrid = data.curSpdGrid;
  if (Array.isArray(data.curDirGrid)) curDirGrid = data.curDirGrid;
  if (data.baseCurRef && Number.isFinite(data.baseCurRef.dir) && Number.isFinite(data.baseCurRef.kn)) baseCurRef = data.baseCurRef;
+ if (curSpdGrid.length > 0 && Array.isArray(curSpdGrid[0])) { curRows = curSpdGrid.length; curCols = curSpdGrid[0].length; }   // dimensioni ricavate dai dati salvati
+ else if (data.curRows && data.curCols) { curRows = data.curRows; curCols = data.curCols; }
+ document.getElementById('curRowsInput').value = curRows;
+ document.getElementById('curColsInput').value = curCols;
  ensureCurrentGrids();
 
  if (data.sails) {
@@ -1271,19 +1283,6 @@ body.drawer-open .drawer { transform: translateX(0); }
  newS.push(rowS);
  newD.push(rowD);
  }
- ensureCurrentGrids();
- const smC = makeGridSampler(curSpdGrid, curDirGrid, matrixRows, matrixCols);
- const newCS = [], newCD = [];
- for (let r = 0; r < newRows; r++) {
- const rs = [], rd = [];
- for (let c = 0; c < newCols; c++) {
- const w = smC.sample((c + 0.5) / newCols, (r + 0.5) / newRows);
- rs.push(Math.round(w.tws * 10) / 10);
- rd.push(Math.round(w.twd));
- }
- newCS.push(rs); newCD.push(rd);
- }
- curSpdGrid = newCS; curDirGrid = newCD;
  matrixRows = newRows;
  matrixCols = newCols;
  windMatrixGrid = newS;
@@ -1303,15 +1302,15 @@ body.drawer-open .drawer { transform: translateX(0); }
  return { kn: Number.isFinite(kn) ? clampNum(kn, 0, 8) : 0, dir: Number.isFinite(dir) ? normDeg(dir) : 0 };
  }
  function curGridsAreValid() {
- const ok = g => Array.isArray(g) && g.length === matrixRows && g.every(r => Array.isArray(r) && r.length === matrixCols && r.every(Number.isFinite));
+ const ok = g => Array.isArray(g) && g.length === curRows && g.every(r => Array.isArray(r) && r.length === curCols && r.every(Number.isFinite));
  return ok(curSpdGrid) && ok(curDirGrid);
  }
  function initCurrentMatrix() {
  const b = baseCurrentFromInputs();
  curSpdGrid = []; curDirGrid = [];
- for (let r = 0; r < matrixRows; r++) {
- curSpdGrid.push(new Array(matrixCols).fill(b.kn));
- curDirGrid.push(new Array(matrixCols).fill(b.dir));
+ for (let r = 0; r < curRows; r++) {
+ curSpdGrid.push(new Array(curCols).fill(b.kn));
+ curDirGrid.push(new Array(curCols).fill(b.dir));
  }
  baseCurRef = { dir: b.dir, kn: b.kn };
  }
@@ -1322,7 +1321,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  const box = windGridBox;
  if (!box || !(box.latMax > box.latMin) || !(box.lonMax > box.lonMin)) return { uniform: true, at: () => base };
  ensureCurrentGrids();
- const sm = makeGridSampler(curSpdGrid, curDirGrid, matrixRows, matrixCols);
+ const sm = makeGridSampler(curSpdGrid, curDirGrid, curRows, curCols);
  if (sm.uniform) { const w = sm.sample(); const c = { kn: w.tws, dir: w.twd }; return { uniform: true, at: () => c }; }
  const dLat = box.latMax - box.latMin, dLon = box.lonMax - box.lonMin;
  return { uniform: false, at: (lat, lon) => { const w = sm.sample((lon - box.lonMin) / dLon, (box.latMax - lat) / dLat); return { kn: w.tws, dir: w.twd }; } };
@@ -1335,7 +1334,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  if (!baseCurRef) baseCurRef = { dir: b.dir, kn: b.kn };
  const dD = signedDiff(b.dir, baseCurRef.dir), dK = b.kn - baseCurRef.kn;
  if (Math.abs(dD) > 1e-9 || Math.abs(dK) > 1e-9) {
- for (let r = 0; r < matrixRows; r++) for (let c = 0; c < matrixCols; c++) {
+ for (let r = 0; r < curRows; r++) for (let c = 0; c < curCols; c++) {
  curDirGrid[r][c] = normDeg(curDirGrid[r][c] + dD);
  curSpdGrid[r][c] = clampNum(parseFloat((curSpdGrid[r][c] + dK).toFixed(2)), 0, 8);
  }
@@ -1352,13 +1351,38 @@ body.drawer-open .drawer { transform: translateX(0); }
  requestRecalc(0);
  }
 
+ // Cambio righe/colonne della sola corrente: il campo esistente viene ricampionato.
+ function updateCurrentDimensions() {
+ const newRows = Math.max(1, Math.min(9, parseInt(document.getElementById('curRowsInput').value) || 3));
+ const newCols = Math.max(1, Math.min(9, parseInt(document.getElementById('curColsInput').value) || 3));
+ document.getElementById('curRowsInput').value = newRows;
+ document.getElementById('curColsInput').value = newCols;
+ ensureCurrentGrids();
+ const sm = makeGridSampler(curSpdGrid, curDirGrid, curRows, curCols);
+ const nS = [], nD = [];
+ for (let r = 0; r < newRows; r++) {
+ const rs = [], rd = [];
+ for (let c = 0; c < newCols; c++) {
+ const w = sm.sample((c + 0.5) / newCols, (r + 0.5) / newRows);
+ rs.push(Math.round(w.tws * 10) / 10);
+ rd.push(Math.round(w.twd));
+ }
+ nS.push(rs); nD.push(rd);
+ }
+ curRows = newRows; curCols = newCols;
+ curSpdGrid = nS; curDirGrid = nD;
+ if (windMatrixActive) renderWindMatrixOverlay();
+ updateLiveStatus();
+ requestRecalc();
+ }
+
  // Dati della matrice attualmente mostrata (vento o corrente).
  function layerGrids() {
  if (matrixLayer === 'CURRENT') {
  ensureCurrentGrids();
- return { S: curSpdGrid, D: curDirGrid, base: baseCurrentFromInputs().kn, step: 0.1, max: 8, rot: 180, orot: -90, glyph: '↝', tag: 'CORR', mult: 5, diffScale: 3, outline: 'rgba(251, 146, 60, 0.6)' };
+ return { rows: curRows, cols: curCols, S: curSpdGrid, D: curDirGrid, base: baseCurrentFromInputs().kn, step: 0.1, max: 8, rot: 180, orot: -90, glyph: '↝', tag: 'CORR', mult: 5, diffScale: 3, outline: 'rgba(251, 146, 60, 0.6)' };
  }
- return { S: windMatrixGrid, D: windDirMatrixGrid, base: baseWindFromInputs().tws, step: 0.5, max: 60, rot: 0, orot: 0, glyph: '↓', tag: 'ZONA', mult: 1, diffScale: 15, outline: 'rgba(56, 189, 248, 0.45)' };
+ return { rows: matrixRows, cols: matrixCols, S: windMatrixGrid, D: windDirMatrixGrid, base: baseWindFromInputs().tws, step: 0.5, max: 60, rot: 0, orot: 0, glyph: '↓', tag: 'ZONA', mult: 1, diffScale: 15, outline: 'rgba(56, 189, 248, 0.45)' };
  }
 
  // Una matrice alla volta: aprire quella della corrente nasconde quella del vento e viceversa.
@@ -1456,15 +1480,15 @@ body.drawer-open .drawer { transform: translateX(0); }
  const overlay = document.getElementById('windMatrixOverlay');
  if (!overlay) return;
  
- overlay.style.gridTemplateRows = `repeat(${matrixRows}, 1fr)`;
- overlay.style.gridTemplateColumns = `repeat(${matrixCols}, 1fr)`;
- 
  const L = layerGrids();
+ overlay.style.gridTemplateRows = `repeat(${L.rows}, 1fr)`;
+ overlay.style.gridTemplateColumns = `repeat(${L.cols}, 1fr)`;
+ 
  const baseTws = L.base * L.mult;
  
  let html = '';
- for (let r = 0; r < matrixRows; r++) {
- for (let c = 0; c < matrixCols; c++) {
+ for (let r = 0; r < L.rows; r++) {
+ for (let c = 0; c < L.cols; c++) {
  const val = L.S[r][c];
  const dirVal = L.D[r][c];
  const bgColor = (matrixLayer === 'CURRENT') ? fuchsiaFill(val, 0.5) : getCellColor(val, baseTws, 0.45);
@@ -2860,8 +2884,8 @@ body.drawer-open .drawer { transform: translateX(0); }
  // Celle e frecce del vento disegnate alle loro coordinate geografiche (stessa proiezione del resto del plotter).
  function drawWindMatrixArrows(ctx, vp, toNM) {
  if (!windGridBox || !gridsAreValid()) return;
- const b = windGridBox, rows = matrixRows, cols = matrixCols;
  const L = layerGrids();
+ const b = windGridBox, rows = L.rows, cols = L.cols;
  const baseTws = L.base;
  const cellPt = (r, c) => vp.toCanvas(toNM(
  b.latMax - (r / rows) * (b.latMax - b.latMin),
@@ -3102,4 +3126,3 @@ body.drawer-open .drawer { transform: translateX(0); }
  
 </script>
 </html>
-
