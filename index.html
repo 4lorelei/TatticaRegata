@@ -298,7 +298,7 @@ body.drawer-open .drawer { transform: translateX(0); }
 .drawer-body { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
 .drawer-footer { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
 
-.side-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.side-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .side-tab {
  background: var(--bg-input); color: var(--text-muted);
  border: 1px solid var(--border); border-radius: 8px;
@@ -369,6 +369,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  <!-- Popolato dinamicamente -->
  </select>
  <button type="button" id="btnToggleMatrix" class="btn btn-cyan icon-btn" onclick="toggleWindMatrix()" title="Aggiorna la matrice del vento">💨</button>
+ <button type="button" id="btnToggleCurrent" class="btn btn-cyan icon-btn" onclick="toggleCurrentMatrix()" title="Mostra / aggiorna la matrice della corrente">🌊</button>
  <button type="button" id="btnRecalc" class="btn btn-cyan icon-btn btn-calc-trigger" onclick="onCalculatePressed(this)" title="Ricalcola il piano di rotta">🔁</button>
  </div>
 
@@ -383,7 +384,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  🟣 <i>Viola</i>: Meno vento rispetto alla base<br>
  🟢 <i>Verde</i>: Più vento rispetto alla base<br>
  ⬇️ <i>Freccia</i>: Direzione in cui soffia il vento<br>
- 📍 Le celle sono ancorate alle coordinate del campo, non allo schermo: il vento è interpolato tra i centri delle celle. Cambiare TWD/TWS base sposta tutto il campo mantenendo le differenze.
+ 📍 Le celle sono ancorate alle coordinate del campo, non allo schermo: il vento è interpolato tra i centri delle celle. Cambiare TWD/TWS base sposta tutto il campo mantenendo le differenze.<br>🌊 <i>Corrente</i>: il pulsante 🌊 sostituisce la vista del vento con quella della corrente (freccia = direzione verso cui scorre, valore in nodi). Righe, colonne e riquadro sono gli stessi della matrice del vento.
  </div>
  </details>
  </div>
@@ -513,6 +514,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  <button type="button" class="side-tab" id="tab-campo" onclick="showSideTab('campo')"><span>🏁</span>Campo</button>
  <button type="button" class="side-tab" id="tab-barca" onclick="showSideTab('barca')"><span>⛵</span>Barca</button>
  <button type="button" class="side-tab" id="tab-vento" onclick="showSideTab('vento')"><span>💨</span>Vento</button>
+ <button type="button" class="side-tab" id="tab-corrente" onclick="showSideTab('corrente')"><span>🌊</span>Corrente</button>
  </div>
 
  <!-- POSIZIONE -->
@@ -702,6 +704,31 @@ body.drawer-open .drawer { transform: translateX(0); }
  </div>
  </div>
 
+ <!-- CORRENTE -->
+ <div class="side-pane" id="pane-corrente">
+ <div class="card">
+ <div class="card-title"><span>🌊 Corrente Base</span></div>
+ <div class="form-row">
+ <div class="form-group"><label>Direzione Corrente (verso cui va) (°)</label><input type="number" id="curDir" value="0" min="0" max="359" onchange="updateGlobalCurrent()"></div>
+ <div class="form-group"><label>Intensità Corrente (kn)</label><input type="number" id="curKn" value="0" min="0" max="8" step="0.1" onchange="updateGlobalCurrent()"></div>
+ </div>
+ <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">Attenzione: la direzione è quella verso cui l'acqua scorre (per il vento invece si indica la provenienza). Con 0 kn la corrente non influisce sul calcolo.</div>
+ </div>
+ <div class="card">
+ <div class="card-title">
+ <span>🌊 Matrice della Corrente</span>
+ <span class="badge" style="background:#1e293b; color:var(--cyan)">Locale</span>
+ </div>
+ <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">
+ Come per il vento: modifica le celle sul plotter (vista Campo). Mostra una matrice alla volta: aprendo la corrente si nasconde quella del vento. Righe, colonne e riquadro si impostano nella scheda Vento; cambiando la corrente base l'intero campo si sposta mantenendo le differenze.
+ </div>
+ <div style="display:flex; gap:6px;">
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="toggleCurrentMatrix(); closeSettings();">🌊 Modifica sul plotter</button>
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="resetCurrentToBase()" title="Azzera le differenze tra le celle">↺ Uniforma</button>
+ </div>
+ </div>
+ </div>
+
  <!-- VENTO -->
  <div class="side-pane" id="pane-vento">
  <div class="card">
@@ -784,7 +811,11 @@ body.drawer-open .drawer { transform: translateX(0); }
  // WIND MATRIX STATE
  let matrixRows = 3;
  let matrixCols = 3;
- let windMatrixActive = false;
+ let windMatrixActive = false;    // overlay di modifica aperto (vento O corrente)
+ let matrixLayer = 'WIND';        // matrice mostrata sul plotter: 'WIND' | 'CURRENT' (una alla volta)
+ let curSpdGrid = [];             // corrente: intensità (kn) per cella
+ let curDirGrid = [];             // corrente: direzione VERSO CUI scorre (°)
+ let baseCurRef = null;
  let windMatrixGrid = [];
  let windDirMatrixGrid = [];
  let windGridBox = null;   // riquadro geografico a cui è ancorata la matrice {latMin, latMax, lonMin, lonMax}
@@ -803,7 +834,7 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  // --- SCHEDE PANNELLO LATERALE ---
  function showSideTab(name) {
- ['posizione', 'campo', 'barca', 'vento'].forEach(n => {
+ ['posizione', 'campo', 'barca', 'vento', 'corrente'].forEach(n => {
  const pane = document.getElementById('pane-' + n);
  const tab = document.getElementById('tab-' + n);
  if (pane) pane.classList.toggle('active', n === name);
@@ -857,6 +888,11 @@ body.drawer-open .drawer { transform: translateX(0); }
  windDirMatrixGrid: windDirMatrixGrid,
  windGridBox: windGridBox,
  baseWindRef: baseWindRef,
+ curDir: document.getElementById('curDir').value,
+ curKn: document.getElementById('curKn').value,
+ curSpdGrid: curSpdGrid,
+ curDirGrid: curDirGrid,
+ baseCurRef: baseCurRef,
 
  sails: {
  genoa1: document.getElementById('sail_genoa1').checked,
@@ -933,6 +969,13 @@ body.drawer-open .drawer { transform: translateX(0); }
  if (!baseWindRef) { const bw = baseWindFromInputs(); baseWindRef = { twd: bw.twd, tws: bw.tws }; }
  if (!windGridBox) fitWindBoxToCourse(false);
  updateMatrixBoxInfo();
+
+ if (data.curDir !== undefined) document.getElementById('curDir').value = data.curDir;
+ if (data.curKn !== undefined) document.getElementById('curKn').value = data.curKn;
+ if (Array.isArray(data.curSpdGrid)) curSpdGrid = data.curSpdGrid;
+ if (Array.isArray(data.curDirGrid)) curDirGrid = data.curDirGrid;
+ if (data.baseCurRef && Number.isFinite(data.baseCurRef.dir) && Number.isFinite(data.baseCurRef.kn)) baseCurRef = data.baseCurRef;
+ ensureCurrentGrids();
 
  if (data.sails) {
  if (data.sails.genoa1 !== undefined) document.getElementById('sail_genoa1').checked = data.sails.genoa1;
@@ -1220,6 +1263,19 @@ body.drawer-open .drawer { transform: translateX(0); }
  newS.push(rowS);
  newD.push(rowD);
  }
+ ensureCurrentGrids();
+ const smC = makeGridSampler(curSpdGrid, curDirGrid, matrixRows, matrixCols);
+ const newCS = [], newCD = [];
+ for (let r = 0; r < newRows; r++) {
+ const rs = [], rd = [];
+ for (let c = 0; c < newCols; c++) {
+ const w = smC.sample((c + 0.5) / newCols, (r + 0.5) / newRows);
+ rs.push(Math.round(w.tws * 10) / 10);
+ rd.push(Math.round(w.twd));
+ }
+ newCS.push(rs); newCD.push(rd);
+ }
+ curSpdGrid = newCS; curDirGrid = newCD;
  matrixRows = newRows;
  matrixCols = newCols;
  windMatrixGrid = newS;
@@ -1231,30 +1287,91 @@ body.drawer-open .drawer { transform: translateX(0); }
  requestRecalc();
  }
 
- function toggleWindMatrix() {
- windMatrixActive = !windMatrixActive;
- const btnCard = document.getElementById('btnToggleMatrix');
- const btnHeader = document.getElementById('btnToggleMatrixHeader');
- const overlay = document.getElementById('windMatrixOverlay');
+ // ---------- CORRENTE ----------
+ // Direzione = verso cui l'acqua scorre. Stessa struttura della matrice del vento: stesse righe/colonne e stesso riquadro geografico.
+ function baseCurrentFromInputs() {
+ const kn = parseFloat(document.getElementById('curKn').value);
+ const dir = parseFloat(document.getElementById('curDir').value);
+ return { kn: Number.isFinite(kn) ? clampNum(kn, 0, 8) : 0, dir: Number.isFinite(dir) ? normDeg(dir) : 0 };
+ }
+ function curGridsAreValid() {
+ const ok = g => Array.isArray(g) && g.length === matrixRows && g.every(r => Array.isArray(r) && r.length === matrixCols && r.every(Number.isFinite));
+ return ok(curSpdGrid) && ok(curDirGrid);
+ }
+ function initCurrentMatrix() {
+ const b = baseCurrentFromInputs();
+ curSpdGrid = []; curDirGrid = [];
+ for (let r = 0; r < matrixRows; r++) {
+ curSpdGrid.push(new Array(matrixCols).fill(b.kn));
+ curDirGrid.push(new Array(matrixCols).fill(b.dir));
+ }
+ baseCurRef = { dir: b.dir, kn: b.kn };
+ }
+ function ensureCurrentGrids() { if (!curGridsAreValid()) initCurrentMatrix(); }
 
- const labelText = windMatrixActive ? "❌" : "💨";
- const titleText = windMatrixActive ? "Chiudi la matrice del vento" : "Aggiorna la matrice del vento";
- if (btnCard) { btnCard.innerText = labelText; btnCard.title = titleText; }
- if (btnHeader) { btnHeader.innerText = labelText; btnHeader.title = titleText; }
-
- if (windMatrixActive) {
- if (btnCard) btnCard.className = "btn btn-amber icon-btn";
- if (btnHeader) btnHeader.className = "btn btn-amber icon-btn";
- overlay.style.display = (currentViewMode === 'PARTENZA') ? 'none' : 'grid';   // in Vista Partenza la matrice non si mostra
- renderWindMatrixOverlay();
- } else {
- if (btnCard) btnCard.className = "btn btn-cyan icon-btn";
- if (btnHeader) btnHeader.className = "btn btn-cyan icon-btn";
- overlay.style.display = 'none';
+ function makeCurrentField() {
+ const base = baseCurrentFromInputs();
+ const box = windGridBox;
+ if (!box || !(box.latMax > box.latMin) || !(box.lonMax > box.lonMin)) return { uniform: true, at: () => base };
+ ensureCurrentGrids();
+ const sm = makeGridSampler(curSpdGrid, curDirGrid, matrixRows, matrixCols);
+ if (sm.uniform) { const w = sm.sample(); const c = { kn: w.tws, dir: w.twd }; return { uniform: true, at: () => c }; }
+ const dLat = box.latMax - box.latMin, dLon = box.lonMax - box.lonMin;
+ return { uniform: false, at: (lat, lon) => { const w = sm.sample((lon - box.lonMin) / dLon, (box.latMax - lat) / dLat); return { kn: w.tws, dir: w.twd }; } };
  }
 
+ // La corrente base SPOSTA il campo, come il vento base.
+ function updateGlobalCurrent() {
+ const b = baseCurrentFromInputs();
+ ensureCurrentGrids();
+ if (!baseCurRef) baseCurRef = { dir: b.dir, kn: b.kn };
+ const dD = signedDiff(b.dir, baseCurRef.dir), dK = b.kn - baseCurRef.kn;
+ if (Math.abs(dD) > 1e-9 || Math.abs(dK) > 1e-9) {
+ for (let r = 0; r < matrixRows; r++) for (let c = 0; c < matrixCols; c++) {
+ curDirGrid[r][c] = normDeg(curDirGrid[r][c] + dD);
+ curSpdGrid[r][c] = clampNum(parseFloat((curSpdGrid[r][c] + dK).toFixed(2)), 0, 8);
+ }
+ }
+ baseCurRef = { dir: b.dir, kn: b.kn };
+ if (windMatrixActive) renderWindMatrixOverlay();
+ updateLiveStatus();
+ requestRecalc();
+ }
+ function resetCurrentToBase() {
+ initCurrentMatrix();
+ if (windMatrixActive) renderWindMatrixOverlay();
+ updateLiveStatus();
+ requestRecalc(0);
+ }
+
+ // Dati della matrice attualmente mostrata (vento o corrente).
+ function layerGrids() {
+ if (matrixLayer === 'CURRENT') {
+ ensureCurrentGrids();
+ return { S: curSpdGrid, D: curDirGrid, base: baseCurrentFromInputs().kn, step: 0.1, max: 8, rot: 180, tag: 'CORR', mult: 5, diffScale: 3, outline: 'rgba(251, 146, 60, 0.6)' };
+ }
+ return { S: windMatrixGrid, D: windDirMatrixGrid, base: baseWindFromInputs().tws, step: 0.5, max: 60, rot: 0, tag: 'ZONA', mult: 1, diffScale: 15, outline: 'rgba(56, 189, 248, 0.45)' };
+ }
+
+ // Una matrice alla volta: aprire quella della corrente nasconde quella del vento e viceversa.
+ function toggleMatrixLayer(layer) {
+ if (windMatrixActive && matrixLayer === layer) { windMatrixActive = false; matrixLayer = 'WIND'; }
+ else { windMatrixActive = true; matrixLayer = layer; }
+ const bw = document.getElementById('btnToggleMatrix'), bc = document.getElementById('btnToggleCurrent');
+ const wOn = windMatrixActive && matrixLayer === 'WIND', cOn = windMatrixActive && matrixLayer === 'CURRENT';
+ if (bw) { bw.innerText = wOn ? "❌" : "💨"; bw.title = wOn ? "Chiudi la matrice del vento" : "Aggiorna la matrice del vento"; bw.className = "btn " + (wOn ? "btn-amber" : "btn-cyan") + " icon-btn"; }
+ if (bc) { bc.innerText = cOn ? "❌" : "🌊"; bc.title = cOn ? "Chiudi la matrice della corrente" : "Mostra / aggiorna la matrice della corrente"; bc.className = "btn " + (cOn ? "btn-amber" : "btn-cyan") + " icon-btn"; }
+ const overlay = document.getElementById('windMatrixOverlay');
+ if (overlay) overlay.style.display = (windMatrixActive && currentViewMode !== 'PARTENZA') ? 'grid' : 'none';
+ if (windMatrixActive) renderWindMatrixOverlay();
  updateLiveStatus();
  }
+ function toggleWindMatrix() { toggleMatrixLayer('WIND'); }
+ function toggleCurrentMatrix() { toggleMatrixLayer('CURRENT'); }
+
+
+
+
 
  function adjustCellWind(r, c, delta) {
  if (windMatrixGrid[r] && windMatrixGrid[r][c] !== undefined) {
@@ -1312,29 +1429,30 @@ body.drawer-open .drawer { transform: translateX(0); }
  overlay.style.gridTemplateRows = `repeat(${matrixRows}, 1fr)`;
  overlay.style.gridTemplateColumns = `repeat(${matrixCols}, 1fr)`;
  
- const baseTws = parseFloat(document.getElementById('tws').value) || 10;
+ const L = layerGrids();
+ const baseTws = L.base * L.mult;
  
  let html = '';
  for (let r = 0; r < matrixRows; r++) {
  for (let c = 0; c < matrixCols; c++) {
- const val = windMatrixGrid[r][c];
- const dirVal = windDirMatrixGrid[r][c];
- const bgColor = getCellColor(val, baseTws, 0.45);
+ const val = L.S[r][c];
+ const dirVal = L.D[r][c];
+ const bgColor = getCellColor(val * L.mult, baseTws, 0.45);
  
  html += `
  <div style="background: ${bgColor}; border: 1px dashed rgba(255,255,255,0.3); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);">
- <div style="font-size: 0.65rem; font-weight: 800; color: #e2e8f0; text-transform: uppercase;">ZONA R${r+1}C${c+1}</div>
+ <div style="font-size: 0.65rem; font-weight: 800; color: #e2e8f0; text-transform: uppercase;">${L.tag} R${r+1}C${c+1}</div>
  
  <div style="font-size: 1.15rem; font-weight: 900; color: #ffffff; text-shadow: 0 1px 3px rgba(0,0,0,0.8); margin: 2px 0;">${val.toFixed(1)} <span style="font-size:0.75rem; color:var(--cyan);">kn</span></div>
  <div style="display: flex; gap: 4px; margin-bottom: 8px;">
- <button onclick="adjustCellWind(${r}, ${c}, -0.5)" class="btn" style="padding: 2px 8px; font-size: 0.8rem; font-weight: bold; background: rgba(0,0,0,0.5);">-</button>
- <button onclick="adjustCellWind(${r}, ${c}, 0.5)" class="btn" style="padding: 2px 8px; font-size: 0.8rem; font-weight: bold; background: rgba(0,0,0,0.5);">+</button>
+ <button onclick="adjustCellWind(${r}, ${c}, -${L.step})" class="btn" style="padding: 2px 8px; font-size: 0.8rem; font-weight: bold; background: rgba(0,0,0,0.5);">-</button>
+ <button onclick="adjustCellWind(${r}, ${c}, ${L.step})" class="btn" style="padding: 2px 8px; font-size: 0.8rem; font-weight: bold; background: rgba(0,0,0,0.5);">+</button>
  </div>
  
  <div style="display: flex; gap: 4px; align-items:center;">
  <button onclick="adjustCellWindDir(${r}, ${c}, -5)" class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(0,0,0,0.5);">-5°</button>
  <div style="display:flex; flex-direction:column; align-items:center; min-width:30px;">
- <div class="wind-cell-arrow" style="transform: rotate(${dirVal}deg); font-size: 1.2rem; color: var(--gold); text-shadow: 0 1px 3px rgba(0,0,0,0.8);">↓</div>
+ <div class="wind-cell-arrow" style="transform: rotate(${dirVal + L.rot}deg); font-size: 1.2rem; color: var(--gold); text-shadow: 0 1px 3px rgba(0,0,0,0.8);">↓</div>
  <div style="font-size: 0.65rem; font-weight: bold;">${Math.round(dirVal)}°</div>
  </div>
  <button onclick="adjustCellWindDir(${r}, ${c}, 5)" class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(0,0,0,0.5);">+5°</button>
@@ -2071,6 +2189,25 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
 
  // Tempo per percorrere pA→pB (coordinate NM locali) integrando vento e polare passo a passo.
+ // Stato con corrente: la barca governa una rotta sull'ACQUA tale che, sommata al vettore corrente,
+ // la rotta sul FONDO sia trk. Restituisce anche sog (velocità sul fondo lungo trk) e wtrk (rotta sull'acqua).
+ function trackStateCur(trk, w, c, model) {
+ let st = trackState(trk, w, model);
+ if (!c || !(c.kn > 0.02)) { st.sog = st.stw; st.wtrk = trk; return st; }
+ const cx = c.kn * Math.sin(toRad(c.dir)), cy = c.kn * Math.cos(toRad(c.dir));
+ const ux = Math.sin(toRad(trk)), uy = Math.cos(toRad(trk));
+ const along = cx * ux + cy * uy, cross = cx * uy - cy * ux;   // cross > 0: la corrente spinge a destra della rotta
+ let wt = trk, k = 0;
+ for (let i = 0; i < 4; i++) {
+ k = clampNum(cross / Math.max(0.3, st.stw), -0.95, 0.95);
+ wt = normDeg(trk - toDeg(Math.asin(k)));
+ st = trackState(wt, w, model);
+ }
+ st.sog = Math.max(0.1, st.stw * Math.cos(Math.asin(k)) + along);
+ st.wtrk = wt;
+ return st;
+ }
+
  function integrateLeg(pA, pB, ctx) {
  const dx = pB.x - pA.x, dy = pB.y - pA.y;
  const dist = Math.hypot(dx, dy);
@@ -2084,9 +2221,10 @@ body.drawer-open .drawer { transform: translateX(0); }
  let time = 0, sumTws = 0;
  for (let i = 0; i < n; i++) {
  const f = (i + 0.5) / n;
- const w = ctx.wind({ x: pA.x + f * dx, y: pA.y + f * dy });
+ const pt = { x: pA.x + f * dx, y: pA.y + f * dy };
+ const w = ctx.wind(pt);
  sumTws += w.tws;
- time += ds / Math.max(0.25, trackState(trk, w, ctx.model).stw);
+ time += ds / Math.max(0.25, trackStateCur(trk, w, ctx.cur ? ctx.cur(pt) : null, ctx.model).sog);   // tempo sul fondo
  }
  return { time, dist, trk, avgTws: sumTws / n, avgStw: dist / time };
  }
@@ -2155,6 +2293,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  const model = makePolarModel();
  if (!model) return false;
  const wf = makeWindField();
+ const cf = makeCurrentField();
  const isPartenza = (currentViewMode === 'PARTENZA');
 
  let calcLat, calcLon;
@@ -2181,7 +2320,8 @@ body.drawer-open .drawer { transform: translateX(0); }
  const M = { x: (lonTarget - calcLon) * cosLat * 60, y: (latTarget - calcLat) * 60 };
  const D = Math.hypot(M.x, M.y);
  const windAtNM = p => wf.at(calcLat + p.y / 60, calcLon + p.x / (60 * cosLat));
- const ctx = { wind: windAtNM, model, M };
+ const curAtNM = p => cf.at(calcLat + p.y / 60, calcLon + p.x / (60 * cosLat));
+ const ctx = { wind: windAtNM, cur: curAtNM, model, M };
 
  // Vento medio lungo il tratto: serve per costruire le layline di partenza
  const wStart = windAtNM(O);
@@ -2191,8 +2331,17 @@ body.drawer-open .drawer { transform: translateX(0); }
  const twaOpt = coneUp ? pMean.twaUp : pMean.twaDown;
  const lwOpt = coneUp ? Math.min(pMean.leeway, 88 - pMean.twaUp) : 0;
  // rotta sul fondo alla layline: prua a TWA target, poi scarroccio verso sottovento
- const trkS = normDeg(wMean.twd - (twaOpt + lwOpt));   // mure a dritta
- const trkP = normDeg(wMean.twd + (twaOpt + lwOpt));   // mure a sinistra
+ // con corrente: la layline sul fondo è la somma vettoriale di velocità sull'acqua e corrente media
+ const cStart = curAtNM(O);
+ const cv = c => ({ x: c.kn * Math.sin(toRad(c.dir)), y: c.kn * Math.cos(toRad(c.dir)) });
+ const cvs = [cStart, curAtNM({ x: M.x / 2, y: M.y / 2 }), curAtNM(M)].map(cv);
+ const cMean = { x: (cvs[0].x + cvs[1].x + cvs[2].x) / 3, y: (cvs[0].y + cvs[1].y + cvs[2].y) / 3 };
+ const groundTrack = wt => {
+ const v = trackState(wt, wMean, model).stw;
+ return normDeg(toDeg(Math.atan2(v * Math.sin(toRad(wt)) + cMean.x, v * Math.cos(toRad(wt)) + cMean.y)));
+ };
+ const trkS = groundTrack(normDeg(wMean.twd - (twaOpt + lwOpt)));   // mure a dritta
+ const trkP = groundTrack(normDeg(wMean.twd + (twaOpt + lwOpt)));   // mure a sinistra
  const penaltyH = (coneUp ? MANEUVER_LOSS_SEC.tack : MANEUVER_LOSS_SEC.gybe) / 3600;
 
  // 1) rotta diretta   2) due bordi, prima mure a dritta / prima mure a sinistra
@@ -2202,7 +2351,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  ['STB', 'PORT'].forEach(tack => {
  const s = seeds[tack];
  if (!s || s.d < MIN_LEG_NM || s.e < MIN_LEG_NM) return;   // boa fuori dal cono: nessuna virata utile
- const opt = optimizeIntersection(s.I, D, ctx, penaltyH, wf.uniform);
+ const opt = optimizeIntersection(s.I, D, ctx, penaltyH, wf.uniform && cf.uniform);
  if (opt.l1.dist < MIN_LEG_NM || opt.l2.dist < MIN_LEG_NM) return;
  cands.push({ tack, ...opt });
  });
@@ -2237,7 +2386,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
 
  // Prua del primo bordo: rotta sul fondo + scarroccio con il vento locale di partenza
- const st0 = trackState(leg1.trk, wStart, model);
+ const st0 = trackStateCur(leg1.trk, wStart, cStart, model);
  const favoredTack = st0.side > 0 ? 'STB' : 'PORT';
  let tackLabel;
  if (needsSecondLeg) tackLabel = (st0.side > 0) ? "MURE A DRITTA (STARBOARD)" : "MURE A SINISTRA (PORT)";
@@ -2256,6 +2405,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  hdgNext: st0.hdg,
  distNext: leg1.dist,
  stwEff: leg1.avgStw,
+ curKn: cStart.kn, curDir: cStart.dir, curCorr: signedDiff(st0.wtrk, leg1.trk),
  stwLocal: st0.stw,   // velocità attesa dalla polare nel vento del punto/settore attuale (non mediata sul bordo)
  needsSecondLeg: needsSecondLeg,
  isUpwind: st0.twaH < 90,
@@ -2297,6 +2447,7 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  if (plotterTitle) {
  plotterTitle.innerText = isPartenza ? "🗺️ Plotter Tattico & Linea di Partenza" : "🗺️ Plotter Tattico & Campo di Regata";
+ if (!isPartenza && windMatrixActive && matrixLayer === 'CURRENT') plotterTitle.innerText = "🌊 Plotter Tattico & Matrice della Corrente";
  }
 
  if (heroHeader) {
@@ -2397,7 +2548,12 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  document.getElementById('heroHdgWithLeeway').innerText = `${roundedHdgWithLeeway}°`;
  document.getElementById('heroHdgNoLeeway').innerText = `Rilevamento BRG Target: ${roundedBrgNoLeeway}°`;
- document.getElementById('heroLeewayNote').innerText = leewayCorrectionText;
+ let curNote = "";
+ if (plan.curKn >= 0.1) {
+ const cc = Math.round(plan.curCorr);
+ curNote = ` | Corrente ${plan.curKn.toFixed(1)} kn verso ${Math.round(plan.curDir)}°` + (Math.abs(cc) >= 1 ? `: rotta corretta di ${Math.abs(cc)}° a ${cc > 0 ? 'destra' : 'sinistra'}` : '');
+ }
+ document.getElementById('heroLeewayNote').innerText = leewayCorrectionText + curNote;
 
  // Etichetta compatta della mura: sempre visibile, evita di ripetere "MURE A ..." in più punti della pagina.
  const tackBadge = document.getElementById('tackBadge');
@@ -2675,15 +2831,16 @@ body.drawer-open .drawer { transform: translateX(0); }
  function drawWindMatrixArrows(ctx, vp, toNM) {
  if (!windGridBox || !gridsAreValid()) return;
  const b = windGridBox, rows = matrixRows, cols = matrixCols;
- const baseTws = baseWindFromInputs().tws;
+ const L = layerGrids();
+ const baseTws = L.base;
  const cellPt = (r, c) => vp.toCanvas(toNM(
  b.latMax - (r / rows) * (b.latMax - b.latMin),
  b.lonMin + (c / cols) * (b.lonMax - b.lonMin)));
 
  for (let r = 0; r < rows; r++) {
  for (let c = 0; c < cols; c++) {
- const twd = windDirMatrixGrid[r][c];
- const tws = windMatrixGrid[r][c];
+ const twd = L.D[r][c];
+ const tws = L.S[r][c];
  const diff = tws - baseTws;
 
  const p0 = cellPt(r, c), p1 = cellPt(r + 1, c + 1);
@@ -2692,7 +2849,7 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  ctx.save();
  if (Math.abs(diff) >= 0.1) {
- const alpha = Math.min(0.6, 0.1 + (Math.abs(diff) / 15.0));
+ const alpha = Math.min(0.6, 0.1 + (Math.abs(diff) / L.diffScale));
  ctx.fillStyle = diff > 0 ? `rgba(16, 185, 129, ${alpha})` : `rgba(168, 85, 247, ${alpha})`;
  ctx.fillRect(x, y, w, h);
  }
@@ -2704,7 +2861,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  const s = clampNum(Math.min(w, h) / 44, 0.35, 1.2);
  ctx.save();
  ctx.translate(cx, cy);
- ctx.rotate(twd * Math.PI / 180);
+ ctx.rotate((twd + L.rot) * Math.PI / 180);
  ctx.scale(s, s);
  ctx.strokeStyle = "rgba(248, 250, 252, 0.85)";
  ctx.lineWidth = 2 / s;
@@ -2731,7 +2888,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  // contorno del riquadro
  const nw = cellPt(0, 0), se = cellPt(rows, cols);
  ctx.save();
- ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+ ctx.strokeStyle = L.outline;
  ctx.setLineDash([6, 4]);
  ctx.lineWidth = 1;
  ctx.strokeRect(nw.x, nw.y, se.x - nw.x, se.y - nw.y);
