@@ -191,6 +191,10 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 }
 canvas { width: 100%; height: 100%; display: block; }
 
+#layerTab { position: absolute; top: 6px; left: 6px; z-index: 30; display: flex; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; overflow: hidden; background: rgba(11,17,32,0.85); }
+#layerTab button { border: 0; background: transparent; color: var(--text-muted); font-size: 0.72rem; font-weight: 800; padding: 5px 9px; cursor: pointer; }
+#layerTab button.active { background: var(--cyan); color: #000; }
+#layerTab button#layerTabCur.active { background: #d946ef; color: #fff; }
 #windMatrixOverlay {
  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
  display: none; gap: 2px;
@@ -376,6 +380,10 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div id="plotterContainer">
  <canvas id="tacticalCanvas"></canvas>
  <div id="windMatrixOverlay"></div>
+ <div id="layerTab" role="tablist" aria-label="Matrice visualizzata">
+ <button type="button" id="layerTabWind" class="active" onclick="setViewLayer('WIND')">💨 Vento</button>
+ <button type="button" id="layerTabCur" onclick="setViewLayer('CURRENT')">🌊 Corrente</button>
+ </div>
  </div>
 
  <details class="plotter-legend">
@@ -723,7 +731,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  Come per il vento: modifica le celle sul plotter (vista Campo). Mostra una matrice alla volta: aprendo la corrente si nasconde quella del vento. Righe, colonne e riquadro si impostano nella scheda Vento; cambiando la corrente base l'intero campo si sposta mantenendo le differenze.
  </div>
  <div style="display:flex; gap:6px;">
- <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="toggleCurrentMatrix(); closeSettings();">🌊 Modifica sul plotter</button>
+ <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="openMatrixEdit('CURRENT'); closeSettings();">🌊 Modifica sul plotter</button>
  <button type="button" class="btn btn-block" style="font-size:0.72rem;" onclick="resetCurrentToBase()" title="Azzera le differenze tra le celle">↺ Uniforma</button>
  </div>
  </div>
@@ -1348,24 +1356,39 @@ body.drawer-open .drawer { transform: translateX(0); }
  function layerGrids() {
  if (matrixLayer === 'CURRENT') {
  ensureCurrentGrids();
- return { S: curSpdGrid, D: curDirGrid, base: baseCurrentFromInputs().kn, step: 0.1, max: 8, rot: 180, tag: 'CORR', mult: 5, diffScale: 3, outline: 'rgba(251, 146, 60, 0.6)' };
+ return { S: curSpdGrid, D: curDirGrid, base: baseCurrentFromInputs().kn, step: 0.1, max: 8, rot: 180, orot: -90, glyph: '↝', tag: 'CORR', mult: 5, diffScale: 3, outline: 'rgba(251, 146, 60, 0.6)' };
  }
- return { S: windMatrixGrid, D: windDirMatrixGrid, base: baseWindFromInputs().tws, step: 0.5, max: 60, rot: 0, tag: 'ZONA', mult: 1, diffScale: 15, outline: 'rgba(56, 189, 248, 0.45)' };
+ return { S: windMatrixGrid, D: windDirMatrixGrid, base: baseWindFromInputs().tws, step: 0.5, max: 60, rot: 0, orot: 0, glyph: '↓', tag: 'ZONA', mult: 1, diffScale: 15, outline: 'rgba(56, 189, 248, 0.45)' };
  }
 
  // Una matrice alla volta: aprire quella della corrente nasconde quella del vento e viceversa.
- function toggleMatrixLayer(layer) {
- if (windMatrixActive && matrixLayer === layer) { windMatrixActive = false; matrixLayer = 'WIND'; }
- else { windMatrixActive = true; matrixLayer = layer; }
- const bw = document.getElementById('btnToggleMatrix'), bc = document.getElementById('btnToggleCurrent');
+ // matrixLayer = matrice VISUALIZZATA sul plotter (linguetta); windMatrixActive = editing aperto sulla matrice visualizzata.
+ function updateLayerUI() {
  const wOn = windMatrixActive && matrixLayer === 'WIND', cOn = windMatrixActive && matrixLayer === 'CURRENT';
- if (bw) { bw.innerText = wOn ? "❌" : "💨"; bw.title = wOn ? "Chiudi la matrice del vento" : "Aggiorna la matrice del vento"; bw.className = "btn " + (wOn ? "btn-amber" : "btn-cyan") + " icon-btn"; }
- if (bc) { bc.innerText = cOn ? "❌" : "🌊"; bc.title = cOn ? "Chiudi la matrice della corrente" : "Mostra / aggiorna la matrice della corrente"; bc.className = "btn " + (cOn ? "btn-amber" : "btn-cyan") + " icon-btn"; }
+ const bw = document.getElementById('btnToggleMatrix'), bc = document.getElementById('btnToggleCurrent');
+ if (bw) { bw.innerText = wOn ? "❌" : "💨"; bw.title = wOn ? "Chiudi la modifica della matrice del vento" : "Modifica la matrice del vento"; bw.className = "btn " + (wOn ? "btn-amber" : "btn-cyan") + " icon-btn"; }
+ if (bc) { bc.innerText = cOn ? "❌" : "🌊"; bc.title = cOn ? "Chiudi la modifica della matrice della corrente" : "Modifica la matrice della corrente"; bc.className = "btn " + (cOn ? "btn-amber" : "btn-cyan") + " icon-btn"; }
+ const tw = document.getElementById('layerTabWind'), tc = document.getElementById('layerTabCur');
+ if (tw) tw.classList.toggle('active', matrixLayer === 'WIND');
+ if (tc) tc.classList.toggle('active', matrixLayer === 'CURRENT');
  const overlay = document.getElementById('windMatrixOverlay');
  if (overlay) overlay.style.display = (windMatrixActive && currentViewMode !== 'PARTENZA') ? 'grid' : 'none';
  if (windMatrixActive) renderWindMatrixOverlay();
+ }
+ // Pulsanti 💨 / 🌊: aprono o chiudono la modifica; chiudendola, la vista resta sulla matrice scelta.
+ function toggleMatrixLayer(layer) {
+ if (windMatrixActive && matrixLayer === layer) windMatrixActive = false;
+ else { windMatrixActive = true; matrixLayer = layer; }
+ updateLayerUI();
  updateLiveStatus();
  }
+ // Linguetta sul plotter: cambia solo la visualizzazione (vento / corrente).
+ function setViewLayer(layer) {
+ matrixLayer = layer;
+ updateLayerUI();
+ updateLiveStatus();
+ }
+ function openMatrixEdit(layer) { if (!(windMatrixActive && matrixLayer === layer)) toggleMatrixLayer(layer); }
  function toggleWindMatrix() { toggleMatrixLayer('WIND'); }
  function toggleCurrentMatrix() { toggleMatrixLayer('CURRENT'); }
 
@@ -1374,8 +1397,9 @@ body.drawer-open .drawer { transform: translateX(0); }
 
 
  function adjustCellWind(r, c, delta) {
- if (windMatrixGrid[r] && windMatrixGrid[r][c] !== undefined) {
- windMatrixGrid[r][c] = Math.max(0, Math.min(60, parseFloat((windMatrixGrid[r][c] + delta).toFixed(1))));
+ const L = layerGrids();
+ if (L.S[r] && L.S[r][c] !== undefined) {
+ L.S[r][c] = Math.max(0, Math.min(L.max, parseFloat((L.S[r][c] + delta).toFixed(1))));
  renderWindMatrixOverlay();
  updateLiveStatus();
  requestRecalc();
@@ -1383,8 +1407,9 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
  
  function adjustCellWindDir(r, c, delta) {
- if (windDirMatrixGrid[r] && windDirMatrixGrid[r][c] !== undefined) {
- windDirMatrixGrid[r][c] = normDeg(windDirMatrixGrid[r][c] + delta);
+ const L = layerGrids();
+ if (L.D[r] && L.D[r][c] !== undefined) {
+ L.D[r][c] = normDeg(L.D[r][c] + delta);
  renderWindMatrixOverlay();
  updateLiveStatus();
  requestRecalc();
@@ -1422,6 +1447,11 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
  }
 
+ // Corrente: più è forte, più il fucsia è intenso (0 → 3 kn).
+ function fuchsiaT(kn) { return clampNum(kn / 3, 0, 1); }
+ function fuchsiaFill(kn, maxA) { return `rgba(217, 70, 239, ${(0.06 + maxA * fuchsiaT(kn)).toFixed(3)})`; }
+ function fuchsiaStroke(kn) { const t = fuchsiaT(kn); return `rgb(${Math.round(249 - 57 * t)}, ${Math.round(168 - 130 * t)}, ${Math.round(212 - t)})`; }
+
  function renderWindMatrixOverlay() {
  const overlay = document.getElementById('windMatrixOverlay');
  if (!overlay) return;
@@ -1437,7 +1467,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  for (let c = 0; c < matrixCols; c++) {
  const val = L.S[r][c];
  const dirVal = L.D[r][c];
- const bgColor = getCellColor(val * L.mult, baseTws, 0.45);
+ const bgColor = (matrixLayer === 'CURRENT') ? fuchsiaFill(val, 0.5) : getCellColor(val, baseTws, 0.45);
  
  html += `
  <div style="background: ${bgColor}; border: 1px dashed rgba(255,255,255,0.3); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);">
@@ -1452,7 +1482,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  <div style="display: flex; gap: 4px; align-items:center;">
  <button onclick="adjustCellWindDir(${r}, ${c}, -5)" class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(0,0,0,0.5);">-5°</button>
  <div style="display:flex; flex-direction:column; align-items:center; min-width:30px;">
- <div class="wind-cell-arrow" style="transform: rotate(${dirVal + L.rot}deg); font-size: 1.2rem; color: var(--gold); text-shadow: 0 1px 3px rgba(0,0,0,0.8);">↓</div>
+ <div class="wind-cell-arrow" style="transform: rotate(${dirVal + L.orot}deg); font-size: 1.2rem; color: var(--gold); text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${L.glyph}</div>
  <div style="font-size: 0.65rem; font-weight: bold;">${Math.round(dirVal)}°</div>
  </div>
  <button onclick="adjustCellWindDir(${r}, ${c}, 5)" class="btn" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(0,0,0,0.5);">+5°</button>
@@ -2447,7 +2477,7 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  if (plotterTitle) {
  plotterTitle.innerText = isPartenza ? "🗺️ Plotter Tattico & Linea di Partenza" : "🗺️ Plotter Tattico & Campo di Regata";
- if (!isPartenza && windMatrixActive && matrixLayer === 'CURRENT') plotterTitle.innerText = "🌊 Plotter Tattico & Matrice della Corrente";
+ if (!isPartenza && matrixLayer === 'CURRENT') plotterTitle.innerText = "🌊 Plotter Tattico & Matrice della Corrente";
  }
 
  if (heroHeader) {
@@ -2848,7 +2878,10 @@ body.drawer-open .drawer { transform: translateX(0); }
  const cx = x + w / 2, cy = y + h / 2;
 
  ctx.save();
- if (Math.abs(diff) >= 0.1) {
+ if (matrixLayer === 'CURRENT') {
+ ctx.fillStyle = fuchsiaFill(tws, 0.5);
+ ctx.fillRect(x, y, w, h);
+ } else if (Math.abs(diff) >= 0.1) {
  const alpha = Math.min(0.6, 0.1 + (Math.abs(diff) / L.diffScale));
  ctx.fillStyle = diff > 0 ? `rgba(16, 185, 129, ${alpha})` : `rgba(168, 85, 247, ${alpha})`;
  ctx.fillRect(x, y, w, h);
@@ -2863,6 +2896,25 @@ body.drawer-open .drawer { transform: translateX(0); }
  ctx.translate(cx, cy);
  ctx.rotate((twd + L.rot) * Math.PI / 180);
  ctx.scale(s, s);
+ if (matrixLayer === 'CURRENT') {
+ // freccia ondulata: la punta (in +y) indica dove va la corrente; colore e spessore crescono con l'intensità
+ if (tws >= 0.05) {
+ const t = fuchsiaT(tws);
+ ctx.strokeStyle = fuchsiaStroke(tws);
+ ctx.lineWidth = (2 + 1.8 * t) / s;
+ ctx.lineCap = "round"; ctx.lineJoin = "round";
+ ctx.beginPath();
+ for (let yy = -13; yy <= 5; yy += 0.5) {
+ const xx = 3.2 * Math.sin((yy + 13) * 0.75);
+ if (yy === -13) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+ }
+ ctx.lineTo(0, 13);
+ ctx.moveTo(-5.5, 6);
+ ctx.lineTo(0, 13);
+ ctx.lineTo(5.5, 6);
+ ctx.stroke();
+ }
+ } else {
  ctx.strokeStyle = "rgba(248, 250, 252, 0.85)";
  ctx.lineWidth = 2 / s;
  ctx.beginPath();
@@ -2872,6 +2924,7 @@ body.drawer-open .drawer { transform: translateX(0); }
  ctx.moveTo(0, 12);
  ctx.lineTo(5, 5);
  ctx.stroke();
+ }
  ctx.restore();
 
  if (Math.min(w, h) > 34) {
@@ -2922,6 +2975,8 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  const boatNM = toNM(boatLat, boatLon);
  const overlayEl = document.getElementById('windMatrixOverlay');
+ const tabEl = document.getElementById('layerTab');
+ if (tabEl) tabEl.style.display = isPartenza ? 'none' : 'flex';
  let vp;
 
  if (isPartenza) {
