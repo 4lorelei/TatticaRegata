@@ -1997,6 +1997,16 @@ body.drawer-open .drawer { transform: translateX(0); }
  return `${mins} min`;
  }
 
+ // Formatta un vantaggio/differenza di tempo (espresso in ore, come i tempi di rotta interni)
+ // in una stringa leggibile "X min Y s" oppure "Y s" se sotto al minuto.
+ function formatAdvantageTime(hours) {
+ const totalSec = Math.round(Math.abs(hours) * 3600);
+ const m = Math.floor(totalSec / 60);
+ const s = totalSec % 60;
+ if (m > 0) return `${m} min ${s < 10 ? '0' : ''}${s} s`;
+ return `${s} s`;
+ }
+
  function formatClockTime(sec) {
  const absSec = Math.abs(sec);
  const m = Math.floor(absSec / 60);
@@ -2839,6 +2849,14 @@ body.drawer-open .drawer { transform: translateX(0); }
 
  // 1) rotta diretta   2) due bordi, prima mure a dritta / prima mure a sinistra
  const direct = integrateLeg(O, M, ctx);
+ // La rotta diretta è realmente navigabile solo se la prua richiesta resta sopra l'angolo di
+ // "zero" della polare (sotto quell'angolo curve(twa) restituisce 0 kn: vero "in panna", non
+ // semplice inefficienza). Sotto quella soglia integrateLeg usa comunque una velocità minima
+ // di sicurezza (0.25 kn) solo per evitare divisioni per zero: il tempo che ne esce è un
+ // artefatto numerico, non un'alternativa reale da mostrare come confronto in UI.
+ const st0Direct = trackStateCur(direct.trk, wStart, cStart, model);
+ const zeroTwa = model.entryAt(wStart.tws).p.twaUp * 0.4;
+ const directSailable = !coneUp || (st0Direct.twaH > zeroTwa);
  const seeds = { STB: solveTwoLeg(M, trkS, trkP), PORT: solveTwoLeg(M, trkP, trkS) };
  const cands = [];
  ['STB', 'PORT'].forEach(tack => {
@@ -2864,6 +2882,14 @@ body.drawer-open .drawer { transform: translateX(0); }
  if (keep && keep.time <= best2.time + tie) best2 = keep;
  }
  const needsSecondLeg = !!best2 && best2.time < direct.time;
+
+ // Candidato "scartato": l'altra mura di partenza possibile per il bordo di bolina. È questo,
+ // non la rotta diretta (mai navigabile in questa configurazione), il vero termine di paragone
+ // tattico quando needsSecondLeg è true: quanto si guadagna partendo su una mura piuttosto che
+ // sull'altra.
+ const otherCand = (needsSecondLeg && best2) ? cands.find(c => c.tack !== best2.tack) : null;
+ const otherTackTime = otherCand ? otherCand.time : null;
+ const otherTackLabel = otherCand ? (otherCand.tack === 'STB' ? 'Dritta' : 'Sinistra') : null;
 
  let leg1, totalRoutingTime, latInter, lonInter;
  if (needsSecondLeg) {
@@ -2908,10 +2934,24 @@ body.drawer-open .drawer { transform: translateX(0); }
  twd: wStart.twd,
  tws: leg1.avgTws,
  distDirect: distDirect,
+ directSailable: directSailable,
  leeway: model.ref.leeway,
  leewayEff: st0.lw,
  hdgTwa: st0.twaH,
- totalRoutingTime: totalRoutingTime
+ totalRoutingTime: totalRoutingTime,
+ // Tempi delle due alternative (in ore), per mostrare il vantaggio della strategia scelta
+ // rispetto a quella scartata. twoLegRouteTime è null se nessun bordo utile è disponibile
+ // (boa già raggiungibile in un solo lato, senza reale alternativa da confrontare).
+ directRouteTime: direct.time,
+ twoLegRouteTime: best2 ? best2.time : null,
+ otherTackTime: otherTackTime,
+ otherTackLabel: otherTackLabel,
+ // Tempi dei due candidati (mure a dritta prima / mure a sinistra prima), per poter verificare
+ // che la mura mostrata sia davvero quella con il tempo minore e non solo quella "tenuta" per
+ // isteresi (vedi keep/tie qui sopra). Utile in console per il debug di scelte di mura sospette.
+ candTimes: { STB: cands.find(c => c.tack === 'STB') ? cands.find(c => c.tack === 'STB').time : null,
+ PORT: cands.find(c => c.tack === 'PORT') ? cands.find(c => c.tack === 'PORT').time : null },
+ chosenWasHysteresis: !!(cands.length && best2 && best2.tack !== cands.reduce((a, b) => (b.time < a.time ? b : a)).tack)
  };
 
  updateLiveStatus();
@@ -3087,10 +3127,36 @@ body.drawer-open .drawer { transform: translateX(0); }
  }
  } else if (!plan.needsSecondLeg) {
  titleEl.innerHTML = `ROTTA DIRETTA: <span style="color:var(--green)">VERSO LA BOA ${plan.targetMark}</span>`;
- bannerDetailEl.innerHTML = `Navigazione diretta verso Boa ${plan.targetMark} (${plan.distDirect.toFixed(2)} NM) | Vento Base ${plan.tws.toFixed(1)} kn`;
+ let advTextDirect = "";
+ if (Number.isFinite(plan.twoLegRouteTime)) {
+ const advH = plan.twoLegRouteTime - plan.directRouteTime;
+ advTextDirect = ` | Vantaggio +${formatAdvantageTime(advH)} vs. Bordo Ottimizzato (due bordi)`;
+ }
+ bannerDetailEl.innerHTML = `Navigazione diretta verso Boa ${plan.targetMark} (${plan.distDirect.toFixed(2)} NM) | Vento Base ${plan.tws.toFixed(1)} kn${advTextDirect}`;
  } else {
  titleEl.innerHTML = `BORDO OTTIMIZZATO (Matrice): <span style="color:var(--cyan)">${plan.tackLabel} (PRUA: ${roundedHdgWithLeeway}°)</span>`;
- bannerDetailEl.innerHTML = `Raggiungi il punto obiettivo (calcolato sulle raffiche e salti di vento) per effettuare la <b>${manovraText}</b> verso Boa ${plan.targetMark}`;
+ let advTextTwoLeg;
+ if (Number.isFinite(plan.otherTackTime)) {
+ // Confronto tattico corretto per una bolina a due bordi: quanto si guadagna partendo su
+ // questa mura invece che sull'altra. È il paragone rilevante, non la rotta diretta (che in
+ // bolina stretta non è mai davvero navigabile).
+ const advHOtherTack = plan.otherTackTime - plan.totalRoutingTime;
+ advTextTwoLeg = ` | Vantaggio +${formatAdvantageTime(advHOtherTack)} vs. partire con Mure a ${plan.otherTackLabel}`;
+ } else if (plan.directSailable) {
+ // Nessuna alternativa di mura utile disponibile (l'altro bordo non è percorribile: boa fuori
+ // dal cono su quel lato): in questo caso, e solo se la rotta diretta è davvero navigabile
+ // (solo più lenta), resta un confronto sensato.
+ const advHTwoLeg = plan.directRouteTime - plan.totalRoutingTime;
+ advTextTwoLeg = ` | Vantaggio +${formatAdvantageTime(advHTwoLeg)} vs. Rotta Diretta`;
+ } else {
+ // Nessuna alternativa reale da mostrare: né l'altra mura né la rotta diretta sono percorribili.
+ advTextTwoLeg = ` | Unica rotta percorribile: virata obbligatoria`;
+ }
+ bannerDetailEl.innerHTML = `Raggiungi il punto obiettivo (calcolato sulle raffiche e salti di vento) per effettuare la <b>${manovraText}</b> verso Boa ${plan.targetMark}${advTextTwoLeg}`;
+ if (plan.chosenWasHysteresis && plan.candTimes && Number.isFinite(plan.candTimes.STB) && Number.isFinite(plan.candTimes.PORT)) {
+ console.log(`[TatticaRegata] Mura mostrata (${plan.tackLabel}) mantenuta per isteresi anti-ribaltamento. ` +
+ `Tempi calcolati — STB: ${(plan.candTimes.STB*3600).toFixed(1)}s, PORT: ${(plan.candTimes.PORT*3600).toFixed(1)}s.`);
+ }
  }
 
  const timeNext = (plan.stwEff > 0) ? (distToCurTarget / plan.stwEff) * 60 : 0;
